@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golaha Laba Gole - Elite Analytics & Global Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700;900&family=Inter:wght@400;700;900&display=swap');
+        :root { --gool-gold: #fbbf24; --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
+        body { background-color: #070707; background-image: radial-gradient(circle at 50% 0%, #112b1d 0%, #070707 70%); font-family: 'Inter', sans-serif; color: #f1f5f9; min-height: 100vh; padding: 20px; }
+        
+        .award-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 32px; padding: 24px; position: relative; overflow: hidden; backdrop-filter: blur(10px); }
+        .award-row { display: flex; gap: 8px; justify-content: center; align-items: flex-end; height: 200px; width: 100%; margin-bottom: 12px; }
+        .box-side { height: 140px; width: 28%; border-radius: 16px; background: #000; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+        .box-main { height: 190px; width: 40%; border-radius: 20px; background: #000; border: 2px solid rgba(251, 191, 36, 0.4); overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 20px rgba(251,191,36,0.2); }
+        .award-img { width: 100%; height: 100%; object-fit: cover; }
+        .mini-badge { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 2px 6px; border-radius: 6px; font-size: 8px; font-weight: 900; white-space: nowrap; border: 1px solid rgba(255,255,255,0.2); }
+        .rank-one-tag { position: absolute; top: 12px; right: 12px; background: var(--gold-gradient); color: black; padding: 4px 12px; border-radius: 99px; font-weight: 900; font-size: 10px; z-index: 10; }
+        .name-display { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.4rem; font-weight: 900; text-transform: uppercase; margin-top: 10px; font-family: 'Oswald'; }
+        .glass-panel { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; }
+        .tab-btn { padding: 8px 16px; border-radius: 12px; font-weight: 700; background: rgba(255,255,255,0.03); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.3s; }
+        .tab-active { background: var(--gool-gold) !important; color: #000 !important; }
+        
+        table { border-spacing: 0 8px; border-collapse: separate; width: 100%; }
+        tbody tr { background: rgba(255, 255, 255, 0.02); border-radius: 12px; transition: 0.2s; cursor: pointer; }
+        tbody tr:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.05); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        tbody td { color: #f1f5f9; font-weight: 600; padding: 16px; text-align: center; }
+        .rank-badge { background: var(--gold-gradient); color: black; padding: 4px 14px; border-radius: 14px; font-weight: 900; display: inline-block; min-width: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .rank-badge-1 { background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%); outline: 2px solid #fbbf24; outline-offset: 2px; }
+        .total-col { background: rgba(251, 191, 36, 0.1); color: var(--gool-gold); font-size: 1.1rem; }
+
+        .admin-only { display: none !important; }
+        body[data-role="admin"] .admin-only { display: block !important; }
+        body[data-role="admin"] table .admin-only { display: table-cell !important; }
+
+        .oswald { font-family: 'Oswald', sans-serif; }
+        .star-glow { text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+
+        #reportModal, #voteListModal, #largeViewModal, #lockoutModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); padding: 20px; align-items: center; justify-content: center; }
+        .report-content { background: #0f172a; border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 32px; max-width: 500px; width: 100%; padding: 32px; position: relative; }
+
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.3); border-radius: 10px; }
+        #floatingChatWindow { display: none; width: 420px; max-width: calc(100vw - 40px); height: 600px; max-height: calc(100vh - 120px); z-index: 100; transition: transform 0.3s; }
+        #unreadBadge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 10px; font-weight: 900; width: 22px; height: 22px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid #070707; }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white !important; color: black !important; margin: 0; padding: 0; }
+            body * { visibility: hidden; }
+            #printPreviewModal, #printPreviewModal * { visibility: visible; }
+            #printPreviewModal { position: absolute; left: 0; top: 0; width: 100%; background: transparent !important; padding: 0 !important; border: none !important; box-shadow: none !important; }
+            .no-print { display: none !important; }
+        }
+
+        #printPreviewModal, #printPreviewModal * { color: #000000 !important; }
+        #printPreviewModal span { background: transparent !important; border: none !important; font-weight: 900 !important; }
+
+        /* LIGHT MODE OVERRIDES */
+        body.light-theme {
+            background-color: #f8fafc !important;
+            background-image: none !important;
+            color: #0f172a !important;
+        }
+        body.light-theme .glass-panel,
+        body.light-theme .award-card,
+        body.light-theme .report-content,
+        body.light-theme #floatingChatWindow,
+        body.light-theme [id$="Modal"] > div {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+        body.light-theme .text-white { color: #0f172a !important; }
+        body.light-theme .text-gray-400 { color: #475569 !important; }
+        body.light-theme .bg-black\/40, 
+        body.light-theme .bg-black\/20 { 
+            background-color: #f1f5f9 !important; 
+            border-color: #cbd5e1 !important; 
+        }
+        body.light-theme table tbody td { color: #1e293b !important; }
+        body.light-theme input, 
+        body.light-theme select { 
+            color: #0f172a !important; 
+            background-color: #fff !important; 
+            border: 1px solid #cbd5e1 !important;
+        }
+        body.light-theme .box-side, 
+        body.light-theme .box-main { 
+            background: #f8fafc !important; 
+        }
+    </style>
+</head>
+<body id="mainBody">
+
+<div id="loginScreen" class="fixed inset-0 z-50 bg-[#070707] flex items-center justify-center p-4">
+    <div class="glass-panel max-w-md w-full p-8 border border-yellow-500/20 text-center shadow-2xl">
+        <h1 class="text-4xl font-black oswald text-white tracking-tighter mb-2">GOLAHA <span class="text-yellow-500">LABA GOLE</span></h1>
+        <p id="authSubtitle" class="text-xs text-gray-400 font-bold tracking-widest uppercase mb-8">Secure Access Portal</p>
+        <div class="space-y-4 text-left">
+            <div id="signUpNameContainer" class="hidden">
+                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Select Your Athlete Profile</label>
+                <select id="signUpNameSelect" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white tracking-wide focus:outline-none focus:border-yellow-500/50">
+                    <option value="">-- SELECT NAME --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Email Address</label>
+                <input type="email" id="loginEmail" placeholder="player@golaha.com" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white tracking-wide focus:outline-none focus:border-yellow-500/50">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white tracking-wide focus:outline-none focus:border-yellow-500/50">
+            </div>
+            <button onclick="handleAuthSubmit()" id="authSubmitBtn" class="w-full mt-2 py-4 bg-yellow-500 text-black font-black oswald uppercase tracking-widest hover:bg-yellow-400 transition">Login</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-6 font-semibold">
+            <span id="toggleText">Don't have an account?</span> 
+            <button onclick="toggleAuthMode()" id="toggleActionBtn" class="text-yellow-500 font-black underline ml-1 focus:outline-none">Sign Up Here</button>
+        </p>
+        <p id="loginError" class="text-xs text-red-500 font-bold mt-4 h-4"></p>
+    </div>
+</div>
+
+<div id="lockoutModal" class="fixed inset-0 z-[150] bg-[#070707] flex items-center justify-center p-4">
+    <div class="glass-panel max-w-md w-full p-8 border border-red-500/30 text-center shadow-2xl bg-black">
+        <div class="w-16 h-16 rounded-full bg-red-600/10 border border-red-500/30 flex items-center justify-center mx-auto mb-6">
+            <span class="text-3xl text-red-500">⚠️</span>
+        </div>
+        <h2 class="text-4xl font-black oswald text-white tracking-tighter mb-4 uppercase">Fadlan bixi lacagta</h2>
+        <p class="text-sm text-gray-400 mb-6 font-semibold leading-relaxed">
+            Systemka waa lagaa xiray sababtoo ah lagama helin bixinta lacagta bishaan profile-kaaga dhexdiisa. Markaad bixiso guji badhanka hoose si codsi ansixin ah loogu diro maamulka.
+        </p>
+        <div class="space-y-4">
+            <button id="lockoutIPaidBtn" onclick="submitPaymentApprovalRequest()" class="w-full py-4 bg-yellow-500 text-black font-black oswald uppercase tracking-widest hover:bg-yellow-400 transition rounded-xl">
+                I Paid
+            </button>
+            <p id="lockoutStatusMsg" class="text-xs text-yellow-500 font-bold tracking-wide mt-2 min-h-4"></p>
+            <button onclick="handleLogout()" class="w-full py-3 bg-white/5 text-gray-400 font-bold text-xs rounded-xl border border-white/10 hover:bg-white/10 transition uppercase">
+                🚪 Logout / Ka Bax
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="dashboardArea" class="hidden max-w-[1450px] mx-auto pb-24">
+    <header class="mb-8 flex flex-col lg:flex-row justify-between items-center gap-8">
+        <h1 class="text-6xl font-black oswald text-white tracking-tighter">GOLAHA <span class="text-yellow-500">LABA GOLE</span></h1>
+        <div class="glass-panel p-2 flex flex-wrap gap-2 justify-center shadow-2xl items-center">
+            <select id="viewYear" onchange="render()" class="tab-btn bg-transparent border-none font-bold text-yellow-500"></select>
+            <button onclick="changeFilter('YEAR')" id="f-YEAR" class="tab-btn tab-active">🏆 SEASON</button>
+            <select id="selMonth" onchange="changeFilter('MONTH')" class="tab-btn bg-transparent border-none"></select>
+            <select id="selWeek" onchange="changeFilter('WEEK')" class="tab-btn bg-transparent border-none">
+                <option value="">-- WEEK --</option>
+                <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
+            </select>
+            
+            <button id="publicReportBtn" onclick="showLargeView()" class="hidden tab-btn bg-blue-600 text-white border-none hover:bg-blue-500 flex items-center gap-2">
+                📊 VIEW PAYMENT REPORT
+            </button>
+            
+            <button onclick="toggleTheme()" id="themeToggleBtn" class="tab-btn bg-transparent border border-white/20 hover:bg-white/10 text-xl transition flex items-center justify-center" title="Toggle Light/Dark Mode">
+                ☀️
+            </button>
+
+            <button onclick="handleLogout()" class="tab-btn bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-900 hover:text-white">🚪 LOGOUT</button>
+        </div>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-4 mb-10 items-stretch">
+        <div class="flex-1">
+            <div id="welcomeContainer" class="flex items-center gap-4 w-full bg-yellow-500/10 py-4 px-6 rounded-3xl border border-yellow-500/20">
+                <div id="userAvatar"
+                     onclick="toggleProfileSettings()"
+                     class="w-12 h-12 rounded-full border-2 border-yellow-500 overflow-hidden flex-shrink-0 bg-black/40 flex items-center justify-center cursor-pointer hover:scale-105 transition">
+                    <span id="avatarPlaceholder" class="text-xl">👤</span>
+                    <img id="avatarImg" src="" class="hidden w-full h-full object-cover">
+                </div>
+                <span id="welcomeMessage" class="text-lg font-black tracking-wide text-yellow-500 uppercase oswald">
+                    👋 WELCOME, USER
+                </span>
+            </div>
+        </div>
+        
+        <div id="attendancePollContainer" class="glass-panel p-6 flex flex-col gap-4 border-yellow-500/30 flex-[2] hidden">
+            <div class="flex flex-col xl:flex-row items-center gap-6 w-full">
+                <div class="text-center xl:text-left flex-1">
+                    <h4 class="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Attendance Poll</h4>
+                    <p id="attendancePollDescription" class="text-sm font-black oswald text-white uppercase italic">Asc dhamaan akhyaarta caawa waa habeenkaan ciyaaraynay hore la loo xaadiro</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="joogeBtn" onclick="castVote('JOOGE')" class="px-6 py-3 bg-green-600/20 hover:bg-green-600 border border-green-500/30 rounded-2xl text-green-400 hover:text-white font-black oswald transition uppercase tracking-widest">Jooge</button>
+                    <button id="maqaneBtn" onclick="castVote('MAQANE')" class="px-6 py-3 bg-red-600/20 hover:bg-red-600 border border-red-500/30 rounded-2xl text-red-400 hover:text-white font-black oswald transition uppercase tracking-widest">Maqane</button>
+                </div>
+                <div class="flex items-center gap-6 border-l border-white/10 pl-6">
+                    <div class="text-center cursor-pointer group" onclick="showVoterList('JOOGE')">
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Jooge</p>
+                        <p id="countJooge" class="text-2xl font-black text-green-500 group-hover:scale-110 transition">0</p>
+                    </div>
+                    <div class="text-center cursor-pointer group" onclick="showVoterList('MAQANE')">
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Maqane</p>
+                        <p id="countMaqane" class="text-2xl font-black text-red-500 group-hover:scale-110 transition">0</p>
+                    </div>
+                    <button onclick="showVoterList('NONE')" class="bg-white/5 hover:bg-white/10 p-3 rounded-xl border border-white/10 text-[10px] font-black text-yellow-500 uppercase tracking-tighter transition">View No Response</button>
+                </div>
+            </div>
+            
+            <div id="attendancePrintControls" class="hidden w-full flex-col sm:flex-row items-center justify-between border-t border-white/10 pt-4 mt-2">
+                <div class="flex items-center gap-2 mb-2 sm:mb-0">
+                    <label class="text-[9px] font-bold text-gray-500 uppercase">Select List:</label>
+                    <select id="printAttendanceSelect" class="bg-black/40 border border-white/10 text-white text-xs font-bold rounded-xl p-2 focus:outline-none focus:border-yellow-500/50">
+                        <option value="JOOGE">Jooge (Present)</option>
+                        <option value="MAQANE">Maqane (Absent)</option>
+                        <option value="NONE">No Response</option>
+                    </select>
+                </div>
+                <button onclick="printAttendanceReport()" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold py-2 px-4 rounded-xl shadow flex items-center gap-2 uppercase tracking-widest transition">
+                    🖨 Print Preview
+                </button>
+            </div>
+            
+            <div id="liveVoteFeedSection" class="w-full border-t border-white/10 pt-4 mt-2 hidden admin-only">
+                <h4 class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Live Vote Feed</h4>
+                <div id="inlineVoteFeed" class="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto chat-scroll pr-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div class="award-card">
+            <div class="rank-one-tag">WEEKLY LEADERBOARD</div>
+            <div class="award-row">
+                <div class="box-side" id="img-goal-WEEK">👤<span class="mini-badge">⚽ GOALS</span></div>
+                <div class="box-main" id="box-WEEK">🏆<span class="mini-badge">👑 MVP</span></div>
+                <div class="box-side" id="img-assist-WEEK">👤<span class="mini-badge">🎯 ASST</span></div>
+            </div>
+            <div id="name-WEEK" class="name-display text-center">---</div>
+            <div class="mt-4 pt-3 border-t border-white/5 text-center text-xs space-y-1">
+                <p class="text-red-400 font-bold">⚽ Top Scorer: <span id="goal-WEEK" class="text-white">---</span></p>
+                <p class="text-green-400 font-bold">🎯 Top Assist: <span id="assist-WEEK" class="text-white">---</span></p>
+            </div>
+        </div>
+
+        <div class="award-card border-yellow-500/50">
+            <div class="rank-one-tag">MONTHLY LEADERBOARD</div>
+            <div class="award-row">
+                <div class="box-side" id="img-goal-MONTH">👤<span class="mini-badge">⚽ GOALS</span></div>
+                <div class="box-main" id="box-MONTH">👑<span class="mini-badge">👑 MVP</span></div>
+                <div class="box-side" id="img-assist-MONTH">👤<span class="mini-badge">🎯 ASST</span></div>
+            </div>
+            <div id="name-MONTH" class="name-display text-center">---</div>
+            <div class="mt-4 pt-3 border-t border-white/5 text-center text-xs space-y-1">
+                <p class="text-red-400 font-bold">⚽ Top Scorer: <span id="goal-MONTH" class="text-white">---</span></p>
+                <p class="text-green-400 font-bold">🎯 Top Assist: <span id="assist-MONTH" class="text-white">---</span></p>
+            </div>
+        </div>
+
+        <div class="award-card">
+            <div class="rank-one-tag">SEASON LEGEND</div>
+            <div class="award-row">
+                <div class="box-side" id="img-goal-YEAR">👤<span class="mini-badge">⚽ GOALS</span></div>
+                <div class="box-main" id="box-YEAR">🎖️<span class="mini-badge">👑 MVP</span></div>
+                <div class="box-side" id="img-assist-YEAR">👤<span class="mini-badge">🎯 ASST</span></div>
+            </div>
+            <div id="name-YEAR" class="name-display text-center">---</div>
+            <div class="mt-4 pt-3 border-t border-white/5 text-center text-xs space-y-1">
+                <p class="text-red-400 font-bold">⚽ Top Scorer: <span id="goal-YEAR" class="text-white">---</span></p>
+                <p class="text-green-400 font-bold">🎯 Top Assist: <span id="assist-YEAR" class="text-white">---</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-10 gap-10">
+        <aside id="adminPanel" class="lg:col-span-4 admin-only">
+            <div id="formCard" class="glass-panel p-6 sticky top-6 border-white/5">
+                <div class="flex gap-2 mb-6 border-b border-white/10 pb-4 overflow-x-auto whitespace-nowrap chat-scroll">
+                    <button onclick="switchAdminTab('data')" id="tabData" class="text-[10px] font-bold uppercase text-yellow-500">Stats</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('reg')" id="tabReg" class="text-[10px] font-bold uppercase text-gray-500">Registry</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('pay')" id="tabPay" class="text-[10px] font-bold uppercase text-gray-500">Payments</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('payAn')" id="tabPayAn" class="text-[10px] font-bold uppercase text-gray-500">Analytics</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('gan')" id="tabGan" class="text-[10px] font-bold uppercase text-gray-500">Ganaax</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('fasax')" id="tabFasax" class="text-[10px] font-bold uppercase text-gray-500">Fasax</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('popup')" id="tabPopup" class="text-[10px] font-bold uppercase text-gray-500">Celebration</button>
+                </div>
+                
+                <div id="regForm" class="hidden space-y-4">
+                    <input type="text" id="regName" placeholder="PLAYER NAME" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 uppercase font-bold text-white">
+                    <input type="file" id="regPhoto" class="text-[10px] w-full" accept="image/*">
+                    <button onclick="registerPlayer()" class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold uppercase text-xs">Save Profile</button>
+                </div>
+
+                <div id="payForm" class="hidden space-y-4">
+                    <div class="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20">
+                        <label class="text-[10px] font-bold text-yellow-500 uppercase">Set Monthly Fee ($)</label>
+                        <input type="number" id="monthlyFeeInput" onchange="updateGlobalFee(this.value)" class="w-full bg-transparent text-xl font-black text-white focus:outline-none" placeholder="10">
+                    </div>
+                    <select id="payPlayerSelect" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white"></select>
+                    <button onclick="togglePaymentStatus()" class="w-full py-4 rounded-xl bg-green-600 text-white font-black oswald uppercase">Toggle Paid Status</button>
+                    
+                    <div class="border-t border-white/10 pt-4 mt-4">
+                        <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">Pending Approval Requests</h4>
+                        <div id="adminApprovalRequestsList" class="space-y-2 max-h-[220px] overflow-y-auto chat-scroll pr-1 text-xs"></div>
+                    </div>
+                </div>
+
+                <div id="payAnForm" class="hidden space-y-4">
+                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Payment Analytics Report</h4>
+                    
+                    <div class="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20 mb-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="reportVisibilityToggle" onchange="toggleReportVisibility(this.checked)" class="w-4 h-4 accent-blue-500">
+                                <label for="reportVisibilityToggle" class="text-[10px] font-bold text-blue-400 uppercase cursor-pointer">Make Report Public</label>
+                            </div>
+                            <button type="button" onclick="printPaymentAnalytics()" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold py-2 px-4 rounded-xl shadow flex items-center gap-2 uppercase tracking-widest transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                Print Preview
+                            </button>
+                        </div>
+                    </div>
+
+                    <select id="anYear" onchange="updatePaymentReport()" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs"></select>
+                    <select id="anMonth" onchange="updatePaymentReport()" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs"></select>
+                    <select id="anStatus" onchange="updatePaymentReport()" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-bold">
+                        <option value="ALL">ALL STATUS</option>
+                        <option value="PAID">PAID ONLY</option>
+                        <option value="UNPAID">UNPAID ONLY</option>
+                    </select>
+                    
+                    <div id="paymentTableContainer" class="mt-4 max-h-[250px] overflow-y-auto chat-scroll pr-1">
+                        <table class="w-full text-[10px]" id="paymentReportTable">
+                            <thead class="text-yellow-500 uppercase border-b border-white/10">
+                                <tr>
+                                    <th class="p-2 text-left">Player</th>
+                                    <th class="p-2 text-center">Fee</th>
+                                    <th class="p-2 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="ganForm" class="hidden space-y-4">
+                    <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">Add Ganaax Entry</h4>
+                    <select id="ganPlayerSelect" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white"></select>
+                    
+                    <div class="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20">
+                        <label class="text-[10px] font-bold text-yellow-500 uppercase">Editable Price ($)</label>
+                        <input type="number" id="ganPriceInput" class="w-full bg-transparent text-xl font-black text-white focus:outline-none" placeholder="5">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <select id="ganYearSelect" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
+                        <select id="ganMonthSelect" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
+                        <select id="ganDaySelect" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Initial Status</label>
+                        <select id="ganStatusInput" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none">
+                            <option value="PAID">PAID</option>
+                            <option value="UNPAID">UNPAID</option>
+                        </select>
+                    </div>
+
+                    <button onclick="saveGanaax()" class="w-full py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition">Save Ganaax</button>
+                    
+                    <div class="border-t border-white/10 pt-4 mt-6 space-y-3">
+                        <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">Search Ganaax History & Filter</h4>
+                        
+                        <input type="text" id="ganSearchName" placeholder="Search Athlete Name..." class="w-full p-3 rounded-xl bg-black/40 border border-white/10 font-bold text-white text-xs uppercase focus:outline-none focus:border-yellow-500/50">
+                        
+                        <div class="grid grid-cols-4 gap-2">
+                            <select id="ganSearchYear" class="p-3 rounded-xl bg-black/40 text-xs text-white">
+                                <option value="">-- ALL YEARS --</option>
+                            </select>
+                            <select id="ganSearchMonth" class="p-3 rounded-xl bg-black/40 text-xs text-white">
+                                <option value="">-- ALL MONTHS --</option>
+                            </select>
+                            <select id="ganSearchDay" class="p-3 rounded-xl bg-black/40 text-xs text-white">
+                                <option value="">-- ALL DAYS --</option>
+                            </select>
+                            <select id="ganSearchStatus" class="p-3 rounded-xl bg-black/40 text-xs text-white font-bold">
+                                <option value="">-- STATUS --</option>
+                                <option value="PAID">PAID</option>
+                                <option value="UNPAID">UNPAID</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="renderGanaaxTable(true)" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black oswald uppercase text-xs tracking-widest rounded-xl transition">
+                            View Filtered Search
+                        </button>
+
+                        <button onclick="printGanaaxPreview()" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-black oswald uppercase text-xs tracking-widest rounded-xl transition mt-2">
+                            🖨 Print Preview / View All Results
+                        </button>
+
+                        <div class="overflow-x-auto mt-4 max-h-[300px] chat-scroll border border-white/5 rounded-xl bg-black/20">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead class="text-yellow-500 bg-neutral-950/60 uppercase text-[9px] sticky top-0 backdrop-blur-sm border-b border-white/10 z-10">
+                                    <tr>
+                                        <th class="p-3">Athlete Name</th>
+                                        <th class="p-3 text-center">Amount</th>
+                                        <th class="p-3 text-center">Date & Time</th>
+                                        <th class="p-3 text-center">Status</th>
+                                        <th class="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ganTableBody" class="divide-y divide-white/5 font-semibold">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fasaxForm" class="hidden space-y-4">
+                    <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">Fasax / Leave Control Portal</h4>
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Dooro Ciyaaryahanka</label>
+                        <select id="fasaxPlayerSelect" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Xaaladda Fasaxa</label>
+                        <select id="fasaxStatusSelect" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none">
+                            <option value="fasax">Fasax (Leave)</option>
+                            <option value="kasoo noqo">Kasoo Noqo (Return)</option>
+                        </select>
+                    </div>
+                    <button onclick="saveFasax()" class="w-full py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition">Submit Record</button>
+                    
+                    <div class="border-t border-white/10 pt-4 mt-6 space-y-3">
+                        <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">Active Leave Tracker</h4>
+                        <div class="overflow-x-auto max-h-[250px] chat-scroll border border-white/5 rounded-xl bg-black/20">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead class="text-yellow-500 bg-neutral-950/60 uppercase text-[9px] sticky top-0 backdrop-blur-sm border-b border-white/10 z-10">
+                                    <tr>
+                                        <th class="p-3">Athlete Name</th>
+                                        <th class="p-3 text-center">Status</th>
+                                        <th class="p-3 text-right">Date & Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fasaxTableBody" class="divide-y divide-white/5 font-semibold text-white">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="popupForm" class="hidden space-y-4">
+                    <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">Celebration Banner Settings</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Upload a banner image that will display automatically for 5 seconds during the <strong>first 5 days of each month</strong> when users log in or refresh.
+                    </p>
+                    
+                    <div class="border border-white/10 p-4 rounded-xl bg-black/20 text-center">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold block mb-2">Current Banner Preview</label>
+                        <img id="adminCelebrationPreview" src="" class="max-h-40 mx-auto rounded-lg object-contain hidden border border-white/10 bg-black">
+                        <span id="noAdminPreviewText" class="text-xs text-gray-500 italic block">No active celebration banner configured</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Select New Image</label>
+                        <input type="file" id="celebrationImageFile" class="text-[10px] w-full mt-1 bg-black/40 border border-white/10 p-3 rounded-xl text-gray-400 font-semibold focus:outline-none focus:border-yellow-500/50" accept="image/*">
+                    </div>
+
+                    <button onclick="uploadCelebrationBanner()" class="w-full py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
+                        Save Celebration Banner
+                    </button>
+                </div>
+
+                <div id="statsForm" class="space-y-4">
+                    <select id="pNameSelect" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white"></select>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="inMonth" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
+                        <select id="inWeek" class="p-3 rounded-xl bg-black/40 text-xs text-white"><option value="1">W1</option><option value="2">W2</option><option value="3">W3</option><option value="4">W4</option></select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" id="s1" onchange="validateSkill('s1')" placeholder="Time" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                        <input type="number" id="s2" onchange="validateSkill('s2')" placeholder="Beh." class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                        <input type="number" id="s3" onchange="validateSkill('s3')" placeholder="Safe" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                        <input type="number" id="s4" onchange="validateSkill('s4')" placeholder="Perf" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                        <input type="number" id="s5" onchange="validateSkill('s5')" placeholder="Team" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                        <input type="number" id="s6" onchange="validateSkill('s6')" placeholder="Ref" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                        <input type="number" id="s7" onchange="validateSkill('s7')" placeholder="Def" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="yCard" placeholder="Yellow" class="p-3 rounded-xl bg-yellow-500/10 text-yellow-500 text-center font-bold">
+                        <input type="number" id="rCard" placeholder="Red" class="p-3 rounded-xl bg-red-600/10 text-red-600 text-center font-bold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="gA" placeholder="Goals" class="p-3 rounded-xl bg-red-500/10 text-red-500 text-center">
+                        <input type="number" id="aA" placeholder="Assists" class="p-3 rounded-xl bg-green-500/10 text-green-500 text-center">
+                    </div>
+                    <button onclick="saveStats()" id="btnSave" class="w-full py-4 rounded-xl bg-yellow-500 text-black font-black oswald hover:bg-yellow-400 transition">SAVE RECORD</button>
+                </div>
+
+                <div class="border-t border-white/10 mt-6 pt-4 space-y-4">
+                    <button onclick="showUserAccess()" class="w-full py-2 mb-3 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-xl font-bold text-[10px] uppercase transition hover:bg-blue-600 hover:text-white">User Access & Logs</button>
+                    
+                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Poll Management</h4>
+                    
+                    <div class="space-y-2 mb-3 bg-black/20 p-3 rounded-xl border border-white/5">
+                        <label class="text-[9px] font-bold text-gray-400 uppercase">Edit Poll Description Text</label>
+                        <textarea id="adminPollTextInput" rows="2" class="w-full bg-black/40 text-white border border-white/10 rounded-lg p-2 focus:outline-none focus:border-yellow-500/50 text-xs font-semibold" placeholder="Type new poll message here..."></textarea>
+                        <button onclick="savePollText()" class="w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-[10px] rounded-lg uppercase tracking-widest transition">Save Poll Text</button>
+                    </div>
+                    
+                    <button onclick="resetAllVotes()" class="w-full py-2 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Reset All Votes</button>
+                    <div class="flex items-center gap-2 px-2">
+                        <input type="checkbox" id="pollVisibilityToggle" onchange="togglePollVisibility(this.checked)" class="w-4 h-4 accent-yellow-500">
+                        <label for="pollVisibilityToggle" class="text-[10px] font-bold text-gray-400 uppercase cursor-pointer">Make Poll Public</label>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="mainTableArea" class="lg:col-span-6 overflow-x-auto">
+            <div class="glass-panel min-w-[600px]">
+                <table>
+                    <thead class="oswald text-[10px] text-gray-500 uppercase">
+                        <tr>
+                            <th class="p-4 text-left">Athlete</th>
+                            <th class="text-center">Skill Rating</th>
+                            <th class="text-blue-500">MP</th> 
+                            <th class="hidden text-red-500">G</th>
+                            <th class="hidden text-green-500">A</th>
+                            <th class="hidden text-indigo-500">Defense</th>
+                            <th class="hidden admin-only text-yellow-500">Y</th>
+                            <th class="hidden admin-only text-red-600">R</th>
+                            <th>Total</th>
+                            <th class="p-4">Rank</th>
+                            <th class="admin-only">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="celebrationModal" class="fixed inset-0 z-[400] hidden bg-black/85 backdrop-blur-md items-center justify-center p-4">
+    <div class="relative max-w-lg w-full bg-[#0f172a] border-2 border-yellow-500/40 rounded-3xl p-6 text-center shadow-2xl flex flex-col items-center">
+        <button onclick="closeCelebrationModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold text-2xl transition">&times;</button>
+        
+        <h3 class="text-3xl font-black oswald text-yellow-500 uppercase tracking-wide mb-4 star-glow">
+            ✨ HAMBALYO / CONGRATULATIONS ✨
+        </h3>
+        
+        <div class="w-full h-80 rounded-2xl overflow-hidden border border-white/10 bg-black/60 shadow-inner">
+            <img id="celebrationImgDisplay" src="" class="w-full h-full object-cover" alt="Celebration Banner">
+        </div>
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-3 font-bold">This message will close automatically in 5 seconds</p>
+    </div>
+</div>
+
+<div id="printPreviewModal" class="hidden fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm justify-center p-4 overflow-y-auto">
+    <div class="bg-white text-black w-full max-w-4xl min-h-screen my-4 p-8 relative shadow-2xl flex flex-col">
+        <div class="no-print border-b-2 border-gray-300 pb-4 mb-6 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur py-2 z-10">
+            <h2 class="text-2xl font-black text-gray-800 uppercase tracking-widest oswald">Print Preview</h2>
+            <div class="flex gap-4">
+                <button onclick="window.print()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 transition uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print Now
+                </button>
+                <button onclick="closePrintPreview()" class="px-6 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-700 transition uppercase tracking-wider">Cancel</button>
+            </div>
+        </div>
+        <div id="printPreviewContent" class="text-black flex-1">
+            </div>
+    </div>
+</div>
+
+<div id="editGanaaxModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm justify-center items-center p-4">
+    <div class="bg-[#0f172a] border border-yellow-500/30 p-6 rounded-3xl shadow-2xl w-full max-w-md relative">
+        <button type="button" onclick="xirEditGanaax()" class="absolute top-4 right-5 text-2xl text-gray-400 hover:text-white transition">&times;</button>
+        <h2 class="text-2xl font-black text-yellow-500 mb-6 oswald uppercase text-center">Wax Ka Beddel Ganaaxa</h2>
+        
+        <form id="editGanaaxForm" onsubmit="kaydiGanaax(event)" class="space-y-4">
+            <input type="hidden" id="editGanaaxId">
+
+            <div>
+                <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Magaca Ciyaaryahanka</label>
+                <input type="text" id="editGanaaxMagaca" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 text-white font-bold cursor-not-allowed" readonly>
+            </div>
+
+            <div>
+                <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Lacagta ($)</label>
+                <input type="number" id="editGanaaxLacagta" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 text-white font-bold focus:outline-none focus:border-yellow-500/50" required>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Sanadka</label>
+                    <select id="editGanaaxYear" class="w-full mt-1 p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Bisha</label>
+                    <select id="editGanaaxMonth" class="w-full mt-1 p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Maalinta</label>
+                    <select id="editGanaaxDay" class="w-full mt-1 p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs"></select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Status / Bixiyay</label>
+                <select id="editGanaaxStatus" class="w-full mt-1 p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-bold focus:outline-none">
+                    <option value="PAID">PAID</option>
+                    <option value="UNPAID">UNPAID</option>
+                   
+                </select>
+            </div>
+
+            <button type="submit" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black oswald rounded-2xl uppercase tracking-widest transition mt-4">Kaydi Isbeddelka</button>
+        </form>
+    </div>
+</div>
+
+<div id="largeViewModal" onclick="closeLargeView(event)">
+    <div class="bg-[#0f172a] w-full max-w-6xl max-h-[90vh] rounded-3xl border border-yellow-500/30 flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/40">
+            <div>
+                <h2 class="text-2xl font-black oswald text-yellow-500 uppercase">Detailed Payment Report</h2>
+                <p id="largeViewSubtitle" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"></p>
+            </div>
+            <button onclick="closeLargeView(null)" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
+        </div>
+        <div id="modalContent" class="overflow-auto p-8 chat-scroll"></div>
+        <div class="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-4">
+            <button onclick="closeLargeView(null)" class="px-6 py-2 bg-white/5 text-gray-400 font-bold rounded-xl hover:bg-white/10 transition uppercase text-xs">Close View</button>
+        </div>
+    </div>
+</div>
+
+<div id="chatSystemWidget" class="hidden">
+    <button onclick="toggleChatWindow()" id="chatBubbleTriggerBtn" class="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 text-black font-black text-2xl flex items-center justify-center shadow-2xl transition hover:scale-110 active:scale-95 z-50 border border-yellow-400/50">
+        💬
+        <div id="unreadBadge">0</div>
+    </button>
+    <div id="floatingChatWindow" class="fixed bottom-24 right-6 glass-panel border border-yellow-500/20 flex flex-col shadow-2xl overflow-hidden">
+        <div class="bg-black/80 border-b border-white/10 p-4 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg font-black oswald text-yellow-500 uppercase tracking-wide">💬 Global Locker Room</h3>
+                <button onclick="showOnlineUsers()" class="text-[9px] font-black text-green-400 hover:text-green-300 uppercase tracking-widest animate-pulse transition">
+                    ● Online Users (<span id="onlineCount">0</span>)
+                </button>
+            </div>
+            <button onclick="toggleChatWindow()" class="text-gray-400 hover:text-white font-black text-xl px-2">&times;</button>
+        </div>
+        <div id="chatMessageStream" class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll flex flex-col bg-neutral-950/20"></div>
+        <div id="chatUploadLoaderAlert" class="hidden text-[10px] font-black text-yellow-500 uppercase px-4 py-2 animate-pulse">⚡ Uploading...</div>
+        <div class="p-3 bg-black/60 border-t border-white/10 flex items-center gap-2">
+            <input type="text" id="chatTextInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-500/40">
+            <div class="flex items-center gap-1">
+                <label class="cursor-pointer bg-white/5 p-2 rounded-xl border border-white/5"><span class="text-sm">📷</span><input type="file" id="chatImageInput" accept="image/*" onchange="uploadChatMediaFile('IMAGE')" class="hidden"></label>
+                <label class="cursor-pointer bg-white/5 p-2 rounded-xl border border-white/5"><span class="text-sm">🎥</span><input type="file" id="chatVideoInput" accept="video/*" onchange="uploadChatMediaFile('VIDEO')" class="hidden"></label>
+                <button onclick="sendChatMessage()" class="bg-yellow-500 text-black text-xs font-black px-3 py-2 rounded-xl">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="reportModal" onclick="closeReport(event)">
+    <div class="report-content" onclick="event.stopPropagation()">
+        <button onclick="closeReport(null)" class="absolute top-4 right-6 text-gray-400 text-2xl font-bold">&times;</button>
+        <div id="reportPhoto" class="w-24 h-24 rounded-full mx-auto border-4 border-yellow-500 overflow-hidden mb-4 bg-black">
+            <img src="" class="w-full h-full object-cover">
+        </div>
+        <h2 id="reportName" class="text-3xl font-black text-center oswald text-yellow-500 uppercase tracking-wide mb-1">---</h2>
+        <div id="repStars" class="text-center mb-4"></div>
+        
+        <div class="space-y-3">
+            <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-400 text-[10px] font-bold uppercase">Report Context</span>
+                <span id="repMatches" class="text-[12px] font-black text-blue-400 uppercase">0 MATCHES</span>
+            </div>
+            
+            <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-400 text-[10px] font-bold">TOTAL ELITE POINTS</span>
+                <span id="repTotal" class="text-lg font-black text-white">0</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white/5 p-3 rounded-xl text-center border border-white/5">
+                    <p class="text-[9px] text-red-500 font-bold uppercase">Total Goals</p>
+                    <p id="repGoals" class="text-xl font-black">0</p>
+                </div>
+                <div class="bg-white/5 p-3 rounded-xl text-center border border-white/5">
+                    <p class="text-[9px] text-green-500 font-bold uppercase">Total Assists</p>
+                    <p id="repAssists" class="text-xl font-black">0</p>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest text-center mt-4">Disciplinary Record</p>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-yellow-500/10 p-3 rounded-xl text-center border border-yellow-500/20">
+                    <p class="text-[10px] text-yellow-500 font-black uppercase">🟨 Yellow Cards</p>
+                    <p id="repYellow" class="text-xl font-black text-white">0</p>
+                </div>
+                <div class="bg-red-600/10 p-3 rounded-xl text-center border border-red-600/20">
+                    <p class="text-[10px] text-red-600 font-black uppercase">🟥 Red Cards</p>
+                    <p id="repRed" class="text-xl font-black text-white">0</p>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest text-center mt-4">Skill Breakdown</p>
+            <div class="grid grid-cols-4 gap-2 text-[10px] text-center">
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">TIME</p><p id="repS1" class="font-bold text-white">-</p></div>
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">BEH</p><p id="repS2" class="font-bold text-white">-</p></div>
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">SAFE</p><p id="repS3" class="font-bold text-white">-</p></div>
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">PERF</p><p id="repS4" class="font-bold text-white">-</p></div>
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">TEAM</p><p id="repS5" class="font-bold text-white">-</p></div>
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">REF</p><p id="repS6" class="font-bold text-white">-</p></div>
+                <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">DEF</p><p id="repS7" class="font-bold text-white">-</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="voteListModal" onclick="closeVoteList(event)">
+    <div class="bg-[#0f172a] max-w-sm w-full rounded-3xl border border-yellow-500/30 p-6 shadow-2xl relative" onclick="event.stopPropagation()">
+        <button onclick="closeVoteList(null)" class="absolute top-4 right-6 text-gray-400 text-2xl font-bold">&times;</button>
+        <h3 id="voteListTitle" class="text-xl font-black oswald text-yellow-500 uppercase tracking-wide mb-4 text-center">Voters List</h3>
+        <div id="voteListItems" class="max-h-[350px] overflow-y-auto chat-scroll pr-1 space-y-2"></div>
+    </div>
+</div>
+
+<div id="profileSettingsModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-[#0f172a] border border-yellow-500/30 rounded-3xl w-full max-w-md p-6 relative">
+        <button onclick="toggleProfileSettings()" class="absolute top-4 right-5 text-2xl text-gray-400 hover:text-white">&times;</button>
+        <h2 class="text-2xl font-black oswald text-yellow-500 uppercase mb-6 text-center">Profile Settings</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="text-[10px] uppercase text-gray-400 font-bold">Registered Name</label>
+                <input type="text" id="newDisplayName" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 text-gray-500 font-bold cursor-not-allowed" readonly>
+            </div>
+            <div>
+                <label class="text-[10px] uppercase text-gray-400 font-bold">Change Profile Picture</label>
+                <input type="file" id="newProfilePhoto" accept="image/*" class="w-full mt-1 text-xs text-white">
+            </div>
+            <div>
+                <label class="text-[10px] uppercase text-gray-400 font-bold">New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 text-white font-bold">
+            </div>
+            <button onclick="saveProfileSettings()" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black oswald rounded-2xl uppercase tracking-widest transition">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="userAccessModal" class="hidden fixed inset-0 z-[120] bg-black/80 flex items-center justify-center p-4">
+    <div class="bg-[#0f172a] w-full max-w-6xl rounded-3xl p-6 border border-yellow-500/30">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-black text-yellow-500">Full User Management</h3>
+            <button onclick="document.getElementById('userAccessModal').classList.add('hidden')" class="px-4 py-2 bg-red-600 hover:bg-red-500 transition rounded-xl text-xs font-bold text-white">Close</button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <input id="userSearchInput" onkeyup="showUserAccess()" placeholder="Search user/email/action" class="p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:outline-none focus:border-yellow-500/50">
+            <select id="logFilterSelect" onchange="showUserAccess()" class="p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs">
+                <option value="ALL">All Actions</option>
+                <option value="LOGIN">LOGIN</option>
+                <option value="LOGOUT">LOGOUT</option>
+                <option value="PROFILE_UPDATED">PROFILE UPDATED</option>
+                <option value="PLAYER_REGISTERED">PLAYER REGISTERED</option>
+                <option value="ATHLETE_EDITED">ATHLETE EDITED</option>
+                <option value="ATHLETE_DELETED">ATHLETE EDITED</option>
+                <option value="GANAAX_ADDED">GANAAX ADDED</option>
+                <option value="GANAAX_UPDATED">GANAAX UPDATED</option>
+                <option value="GANAAX_DELETED">GANAAX DELETED</option>
+            </select>
+        </div>
+        <div id="userAccessList" class="max-h-[500px] overflow-y-auto text-xs chat-scroll pr-2"></div>
+    </div>
+</div>
+
+<script>
+    const validationRules = {
+        's1': { max: 2, text: '0 or 2' }, 
+        's2': { max: 3, text: '0, 1, 2 or 3' },
+        's3': { max: 4, text: '0, 1, 2, 3 or 4' },
+        's4': { max: 5, text: '0, 1, 2, 3, 4 or 5' },
+        's5': { max: 7, text: '0, 1, 2, 3, 4, 5, 6 or 7' },
+        's6': { max: 9, text: '0, 1, 2, 3, 4, 5, 6, 7, 8 or 9' },
+        's7': { max: 10, text: '0, 1, 2, 3, 4, 5, 6, 7, 8, 9 or 10' }
+    };
+
+    function validateSkill(id) {
+        const el = document.getElementById(id);
+        if (el.value === "") return;
+        
+        const val = parseInt(el.value);
+        const rule = validationRules[id];
+        let isInvalid = isNaN(val) || val < 0 || val > rule.max;
+        
+        if (id === 's1' && val === 1) isInvalid = true;
+
+        if (isInvalid) {
+            alert(`You entered an unallowed number. For this field, your entry must be ${rule.text}.`);
+            el.value = ""; 
+        }
+    }
+
+    // Modal Control functions
+    function closePrintPreview() {
+        const modal = document.getElementById('printPreviewModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function printGanaaxPreview() {
+        const searchName = document.getElementById('ganSearchName')?.value.toUpperCase() || '';
+        const year = document.getElementById('ganSearchYear')?.value || '';
+        const month = document.getElementById('ganSearchMonth')?.value || '';
+        const day = document.getElementById('ganSearchDay')?.value || '';
+        const status = document.getElementById('ganSearchStatus')?.value || '';
+
+        let rows = '';
+
+        Object.entries(ganaaxData || {}).forEach(([id, item]) => {
+            const athlete = (item.player || item.playerName || item.name || item.athlete || item.athleteName || '').toUpperCase();
+            const d = new Date(item.timestamp || Date.now());
+
+            const itemYear = (item.year || d.getFullYear()).toString();
+            const itemMonth = (item.month || (d.getMonth()+1)).toString();
+            const itemDay = (item.day || d.getDate()).toString();
+            const itemStatus = (item.status || '').toUpperCase();
+
+            if (
+                (searchName && !athlete.includes(searchName)) ||
+                (year && itemYear !== year) ||
+                (month && itemMonth !== month) ||
+                (day && itemDay !== day) ||
+                (status && itemStatus !== status)
+            ) return;
+
+            rows += `
+            <tr>
+                <td style="border: 1px solid #cbd5e1; padding: 10px;">${item.player || item.playerName || item.name || item.athlete || item.athleteName || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 10px; text-align:center;">$${item.amount || item.price || 0}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 10px; text-align:center;">${d.toLocaleString()}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 10px; text-align:center;">${item.status || '-'}</td>
+            </tr>`;
+        });
+
+        const html = `
+            <div style="text-align:center; margin-bottom: 20px;">
+                <h2 style="font-size:24px; font-weight:bold; text-transform:uppercase;">Golaha Laba Gool Stadium</h2>
+                <h3 style="font-size:18px; color:#555; text-transform:uppercase; border-bottom: 2px solid #000; padding-bottom: 10px;">Filtered Ganaax Report</h3>
+            </div>
+            <table style="width:100%; border-collapse:collapse; color:black;">
+                <thead>
+                    <tr>
+                        <th style="border:1px solid #cbd5e1; padding:12px; background:#f8fafc; text-align:left;">Athlete Name</th>
+                        <th style="border:1px solid #cbd5e1; padding:12px; background:#f8fafc; text-align:center;">Amount</th>
+                        <th style="border:1px solid #cbd5e1; padding:12px; background:#f8fafc; text-align:center;">Date & Time</th>
+                        <th style="border:1px solid #cbd5e1; padding:12px; background:#f8fafc; text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+        document.getElementById('printPreviewContent').innerHTML = html;
+        document.getElementById('printPreviewModal').classList.remove('hidden');
+        document.getElementById('printPreviewModal').classList.add('flex');
+    }
+
+    function printPaymentAnalytics() {
+        const tableContainer = document.getElementById('paymentTableContainer');
+        if (!tableContainer) {
+            alert("Could not find the payment table.");
+            return;
+        }
+
+        const tableContent = tableContainer.innerHTML;
+        const html = `
+            <div style="text-align:center; margin-bottom: 20px;">
+                <h2 style="font-size:24px; font-weight:bold; text-transform:uppercase;">Golaha Laba Gool Stadium</h2>
+                <h3 style="font-size:18px; color:#555; text-transform:uppercase; border-bottom: 2px solid #000; padding-bottom: 10px;">Payment Analytics Report</h3>
+            </div>
+            <style>
+                #printPreviewContent table { width: 100%; border-collapse: collapse; color: black; }
+                #printPreviewContent th, #printPreviewContent td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; font-size: 14px; color: black !important; background: transparent !important; }
+                #printPreviewContent th { background-color: #f8fafc !important; font-weight: bold; }
+                #printPreviewContent span { color: black !important; }
+            </style>
+            <div>${tableContent}</div>
+        `;
+        document.getElementById('printPreviewContent').innerHTML = html;
+        document.getElementById('printPreviewModal').classList.remove('hidden');
+        document.getElementById('printPreviewModal').classList.add('flex');
+    }
+
+    function printAttendanceReport() {
+        const type = document.getElementById('printAttendanceSelect').value;
+        let title = "";
+        let listHTML = "";
+        let count = 0;
+
+        if (type === 'NONE') {
+            title = "No Response - Attendance Report";
+            Object.keys(profiles).forEach(name => {
+                if (name === "FULL CASHIER") return; 
+                
+                const fData = fasaxData[name];
+                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
+                if (isFasax) return;
+                
+                if (!votes[name]) {
+                    listHTML += `<tr><td style="border: 1px solid #cbd5e1; padding: 10px;">${name}</td><td style="border: 1px solid #cbd5e1; padding: 10px; text-align: right; color: gray;">--:--</td></tr>`;
+                    count++;
+                }
+            });
+        } else {
+            title = type === 'JOOGE' ? "Jooge (Present) - Attendance Report" : "Maqane (Absent) - Attendance Report";
+            
+            for (let name in votes) {
+                if (name === "FULL CASHIER") continue; 
+                
+                const fData = fasaxData[name];
+                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
+                if (isFasax) continue;
+                
+                const voteData = typeof votes[name] === 'object' ? votes[name] : { status: votes[name], timestamp: null };
+                
+                if (voteData.status === type) {
+                    let timeStr = '--:--';
+                    if (voteData.timestamp) {
+                        const d = new Date(voteData.timestamp);
+                        let h = d.getHours();
+                        const m = String(d.getMinutes()).padStart(2, '0');
+                        const ampm = h >= 12 ? 'PM' : 'AM';
+                        h = h % 12 || 12;
+                        timeStr = `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+                    }
+                    listHTML += `<tr><td style="border: 1px solid #cbd5e1; padding: 10px;">${name}</td><td style="border: 1px solid #cbd5e1; padding: 10px; text-align: right;">${timeStr}</td></tr>`;
+                    count++;
+                }
+            }
+        }
+
+        if (count === 0) {
+            alert("There is no data to print for this selection.");
+            return;
+        }
+
+        const html = `
+            <div style="text-align:center; margin-bottom: 20px;">
+                <h2 style="font-size:24px; font-weight:bold; text-transform:uppercase;">Golaha Laba Gool Stadium</h2>
+                <h3 style="font-size:18px; color:#555; text-transform:uppercase; border-bottom: 2px solid #000; padding-bottom: 10px;">${title}</h3>
+            </div>
+            <table style="width:100%; border-collapse: collapse; color: black;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #cbd5e1; padding: 12px; background:#f8fafc; text-align:left;">Athlete Name</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 12px; background:#f8fafc; text-align:right;">Time Recorded</th>
+                    </tr>
+                </thead>
+                <tbody>${listHTML}</tbody>
+            </table>
+            <div style="margin-top: 20px; font-weight: bold; text-align: right; font-size: 16px;">Total Athletes: ${count}</div>
+        `;
+        document.getElementById('printPreviewContent').innerHTML = html;
+        document.getElementById('printPreviewModal').classList.remove('hidden');
+        document.getElementById('printPreviewModal').classList.add('flex');
+    }
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBf2qZ1CcKt7QHnNi55H9JxBxliW7isXiE",
+        authDomain: "labagole-36eef.firebaseapp.com",
+        databaseURL: "https://labagole-36eef-default-rtdb.firebaseio.com",
+        projectId: "labagole-36eef",
+        storageBucket: "labagole-36eef.firebasestorage.app",
+        appId: "1:747283642005:web:c5843eb1ae73e52a980d9c"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const dbRef = firebase.database().ref('golaha_data');
+    const profilesRef = firebase.database().ref('golaha_profiles');
+    const chatRef = firebase.database().ref('golaha_public_chatroom');
+    const votesRef = firebase.database().ref('golaha_votes');
+    const settingsRef = firebase.database().ref('golaha_settings');
+    const presenceRef = firebase.database().ref('golaha_presence');
+    const paymentsRef = firebase.database().ref('golaha_payments');
+    const logsRef = firebase.database().ref('golaha_user_logs');
+    const ganaaxRef = firebase.database().ref('golaha_ganaaxyada'); 
+    const fasaxRef = firebase.database().ref('golaha_fasax');
+    const auth = firebase.auth();
+
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    let db = {}, profiles = {}, activeFilter = 'YEAR', votes = {};
+    let isUserAdmin = false;
+    let isFinanceUser = false;
+    let authMode = "LOGIN";
+    let currentUserProfileUsername = "Anonymous";
+    let currentFee = 10;
+    let paymentData = {};
+    let ganaaxData = {}; 
+    let fasaxData = {};
+    let chatIsOpen = false;
+    let unreadCount = 0;
+    let lastSeenMsgTimestamp = parseInt(localStorage.getItem('lastSeenMsg')) || 0;
+    let globalPaymentDataRaw = {};
+    let currentCalculatedStats = {}; // Tracks stats globally for the modal
+
+    // --- THEME TOGGLE LOGIC ---
+    function toggleTheme() {
+        const body = document.getElementById('mainBody');
+        const btn = document.getElementById('themeToggleBtn');
+        
+        body.classList.toggle('light-theme');
+        
+        if (body.classList.contains('light-theme')) {
+            if(btn) btn.innerText = '🌙';
+            localStorage.setItem('golaha_theme', 'light');
+        } else {
+            if(btn) btn.innerText = '☀️';
+            localStorage.setItem('golaha_theme', 'dark');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('golaha_theme') === 'light') {
+            document.getElementById('mainBody').classList.add('light-theme');
+            const btn = document.getElementById('themeToggleBtn');
+            if (btn) btn.innerText = '🌙';
+        }
+    });
+
+    
+    async function loadAttendancePollFirst() {
+        try {
+            const pollContainer = document.getElementById('attendancePollContainer');
+            if (pollContainer) pollContainer.classList.remove('hidden');
+
+            const snapshots = await Promise.all([
+                votesRef.once('value'),
+                settingsRef.once('value'),
+                fasaxRef.once('value')
+            ]);
+
+            votes = snapshots[0].val() || {};
+            const settings = snapshots[1].val() || {};
+            fasaxData = snapshots[2].val() || {};
+
+            const displayEl = document.getElementById('attendancePollDescription');
+            if (displayEl) {
+                displayEl.innerText = settings.pollText || "Asc dhamaan akhyaarta caawa waa habeenkaan ciyaaraynay hore la loo xaadiro";
+            }
+
+            if (typeof updateAttendancePollUI === 'function') {
+                updateAttendancePollUI();
+            }
+        } catch(e) {
+            console.error('Attendance preload failed', e);
+        }
+    }
+
+
+    auth.onAuthStateChanged(async user => {
+        const loginScreen = document.getElementById('loginScreen');
+        const dashboardArea = document.getElementById('dashboardArea');
+        const chatSystemWidget = document.getElementById('chatSystemWidget');
+        const mainBody = document.getElementById('mainBody');
+        const adminPanel = document.getElementById('adminPanel');
+        const mainTableArea = document.getElementById('mainTableArea');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const avatarImg = document.getElementById('avatarImg');
+        const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+
+        if (user) {
+            loginScreen.style.display = 'none';
+            dashboardArea.classList.remove('hidden');
+            chatSystemWidget.classList.remove('hidden');
+            currentUserProfileUsername = user.displayName || user.email.split('@')[0];
+            welcomeMessage.innerText = `👋 WELCOME, ${currentUserProfileUsername}`;
+            
+            await loadAttendancePollFirst();
+
+            setupPresence(user);
+
+            profilesRef.on('value', s => {
+                profiles = s.val() || {};
+                const userProfile = profiles[currentUserProfileUsername];
+                const userPhoto = typeof userProfile === 'string' ? userProfile : userProfile?.photo;
+                if (userPhoto) {
+                    avatarImg.src = userPhoto;
+                    avatarImg.classList.remove('hidden');
+                    avatarPlaceholder.classList.add('hidden');
+                } else {
+                    avatarImg.classList.add('hidden');
+                    avatarPlaceholder.classList.remove('hidden');
+                }
+                updateDropdowns();
+                render();
+            });
+
+            const admins = [
+                "admin@golaha.com",
+                "admin@gmail.com",
+                "moha@golaha.com",
+                "labagole@admin.com",
+                "ahmedgurey@golaha.com"
+            ];
+            const financeUsers = ["cashier@golaha.com"];
+            const limitedAdmins = ["sacadcabdale@golaha.com"];
+
+            isUserAdmin = admins.includes(user.email.toLowerCase());
+            isFinanceUser = financeUsers.includes(user.email.toLowerCase());
+            const isLimitedAdmin = limitedAdmins.includes(user.email.toLowerCase());
+
+            // Toggles Print Preview in Poll based on auth role
+            const printControls = document.getElementById('attendancePrintControls');
+            if (printControls) {
+                if (isUserAdmin || isFinanceUser || isLimitedAdmin) {
+                    printControls.classList.remove('hidden');
+                    printControls.classList.add('flex');
+                } else {
+                    printControls.classList.remove('flex');
+                    printControls.classList.add('hidden');
+                }
+            }
+
+            // Centralized roles switch
+            if (isUserAdmin || isLimitedAdmin || isFinanceUser) {
+                mainBody.setAttribute('data-role', 'admin');
+                adminPanel.classList.remove('admin-only');
+                mainTableArea.classList.replace('lg:col-span-10', 'lg:col-span-6'); 
+                mainTableArea.classList.replace('lg:col-span-12', 'lg:col-span-6');
+                mainTableArea.classList.replace('lg:col-span-7', 'lg:col-span-6');
+
+                if (isLimitedAdmin) {
+                    document.getElementById('tabPay').style.display = 'none';
+                    document.getElementById('tabPayAn').style.display = 'none';
+                    document.getElementById('tabGan').style.display = 'none';
+                    document.getElementById('tabFasax').style.display = 'none';
+                    document.getElementById('tabPopup').style.display = 'none';
+
+                    const pollSection = document.querySelector('.border-t.border-white\\/10.mt-6.pt-4.space-y-4');
+                    if (pollSection) pollSection.style.display = 'none';
+
+                    setTimeout(() => {
+                        document.getElementById('payForm').classList.add('hidden');
+                        document.getElementById('payAnForm').classList.add('hidden');
+                        document.getElementById('ganForm').classList.add('hidden');
+                        document.getElementById('fasaxForm').classList.add('hidden');
+                        document.getElementById('popupForm').classList.add('hidden');
+                    }, 50);
+                }
+                
+                if (isFinanceUser && !isUserAdmin && !isLimitedAdmin) {
+                    // Hide what cashier shouldn't manage
+                    document.getElementById('tabData').style.display = 'none';
+                    document.getElementById('tabReg').style.display = 'none';
+                    document.getElementById('tabFasax').style.display = 'none';
+                    switchAdminTab('pay');
+                    setTimeout(() => {
+                        document.getElementById('statsForm').classList.add('hidden');
+                        document.getElementById('regForm').classList.add('hidden');
+                        document.getElementById('fasaxForm').classList.add('hidden');
+                        document.getElementById('payForm').classList.remove('hidden');
+                    }, 50);
+                }
+
+            } else {
+                mainBody.removeAttribute('data-role');
+                adminPanel.classList.add('admin-only');
+                mainTableArea.classList.replace('lg:col-span-6', 'lg:col-span-10'); 
+                mainTableArea.classList.replace('lg:col-span-7', 'lg:col-span-10'); 
+                mainTableArea.classList.replace('lg:col-span-9', 'lg:col-span-10');
+            }
+
+            dbRef.on('value', snapshot => { db = snapshot.val() || {}; render(); });
+            votesRef.on('value', s => { votes = s.val() || {}; updateAttendancePollUI(); });
+            
+            paymentsRef.on('value', s => {
+                const data = s.val() || {};
+                currentFee = data.globalFee || 10;
+                paymentData = data.records || {};
+                const inputFee = document.getElementById('monthlyFeeInput');
+                if (inputFee && document.activeElement !== inputFee) inputFee.value = currentFee;
+                
+                updatePaymentReport();
+                globalPaymentDataRaw = data;
+                handleLockoutCheck();
+                updateAdminApprovalList(data);
+            });
+
+            ganaaxRef.on('value', s => {
+                ganaaxData = s.val() || {};
+                if(typeof renderGanaaxTable === 'function') {
+                    renderGanaaxTable(false); 
+                }
+                if(typeof handleLockoutCheck === 'function') {
+                    handleLockoutCheck();
+                }
+            });
+
+            fasaxRef.on('value', s => {
+                fasaxData = s.val() || {};
+                updateAttendancePollUI();
+                renderFasaxTable();
+            });
+
+            settingsRef.on('value', s => {
+                const settings = s.val() || {};
+                
+                // Sync Poll Text
+                const pollTextValue = settings.pollText || "Asc dhamaan akhyaarta caawa waa habeenkaan ciyaaraynay hore la loo xaadiro";
+                
+                const displayEl = document.getElementById('attendancePollDescription');
+                if (displayEl) displayEl.innerText = pollTextValue;
+                
+                const adminInputEl = document.getElementById('adminPollTextInput');
+                if (adminInputEl && document.activeElement !== adminInputEl) {
+                    adminInputEl.value = pollTextValue;
+                }
+
+                const pollVis = settings.pollVisible || false;
+                const pollContainer = document.getElementById('attendancePollContainer');
+                const liveFeedSection = document.getElementById('liveVoteFeedSection');
+                const pollToggle = document.getElementById('pollVisibilityToggle');
+                
+                if (pollToggle) pollToggle.checked = pollVis;
+                // Always show attendance poll after login
+                pollContainer.classList.remove('hidden');
+
+                if (liveFeedSection) {
+                    if (isUserAdmin) liveFeedSection.classList.remove('hidden');
+                    else liveFeedSection.classList.add('hidden');
+                }
+
+                const isVisible = settings.reportVisible || false;
+                const reportBtn = document.getElementById('publicReportBtn');
+                const visibilityToggle = document.getElementById('reportVisibilityToggle');
+                if (visibilityToggle) visibilityToggle.checked = isVisible;
+                if (isVisible || isUserAdmin) reportBtn.classList.remove('hidden');
+                else reportBtn.classList.add('hidden');
+            });
+
+            // Initialize chat stream
+            let seenMessages = new Set();
+            chatRef.limitToLast(50).on('value', snapshot => {
+                const stream = document.getElementById('chatMessageStream');
+                if (!stream) return;
+                stream.innerHTML = ''; 
+                
+                snapshot.forEach(childSnap => {
+                    const msg = childSnap.val();
+                    const msgId = childSnap.key;
+                    
+                    const isMe = msg.sender === currentUserProfileUsername;
+                    const safeText = encodeURIComponent(msg.text || "");
+                    const editedTag = msg.isEdited ? `<span class="text-[8px] opacity-70 ml-1 italic">(edited)</span>` : "";
+                    
+                    let actionBtns = '';
+                    let editBtn = isMe ? `<button onclick="editMessage('${msgId}', '${safeText}')" class="hover:text-black transition">Edit</button>` : '';
+                    let deleteBtn = (isMe || isUserAdmin) ? `<button onclick="deleteMessage('${msgId}')" class="${isMe ? 'hover:text-red-800' : 'text-red-400 hover:text-red-300'} transition">Delete</button>` : '';
+                    
+                    if (editBtn || deleteBtn) {
+                        actionBtns = `
+                            <div class="flex gap-3 mt-2 justify-end opacity-70 text-[9px] font-bold">
+                                ${editBtn}
+                                ${deleteBtn}
+                            </div>
+                        `;
+                    }
+
+                    const wrapperDiv = document.createElement('div');
+                    wrapperDiv.className = `w-full flex ${isMe ? 'justify-end' : 'justify-start'} mb-2`;
+
+                    const innerDiv = document.createElement('div');
+                    innerDiv.className = `p-3 rounded-2xl max-w-[80%] flex flex-col ${isMe ? 'bg-yellow-500 text-black rounded-br-none shadow-md' : 'bg-[#1e293b] text-white border border-white/10 rounded-bl-none shadow-md'}`;
+                    
+                    innerDiv.innerHTML = `
+                        <div class="text-[9px] font-black uppercase mb-1 ${isMe ? 'opacity-60' : 'text-yellow-500 opacity-80'}">${msg.sender}</div>
+                        <div class="text-xs font-semibold break-words">${msg.text} ${editedTag}</div>
+                        ${actionBtns}
+                    `;
+                    
+                    wrapperDiv.appendChild(innerDiv);
+                    stream.appendChild(wrapperDiv);
+                    
+                    if (!seenMessages.has(msgId)) {
+                        seenMessages.add(msgId);
+                        if (!chatIsOpen && !isMe) {
+                            unreadCount++;
+                            updateBadgeUI();
+                        }
+                    }
+                });
+                
+                stream.scrollTop = stream.scrollHeight;
+            });
+
+        } else {
+            loginScreen.style.display = 'flex';
+            dashboardArea.classList.add('hidden');
+            chatSystemWidget.classList.add('hidden');
+            document.getElementById('lockoutModal').style.display = 'none';
+            profilesRef.on('value', s => { profiles = s.val() || {}; updateDropdowns(); });
+        }
+    });
+
+    function handleLockoutCheck() {
+        const user = auth.currentUser;
+        if (!user) return;
+        
+        // Admins and Cashiers bypass all lockouts
+        const admins = ["admin@golaha.com", "admin@gmail.com", "moha@golaha.com", "labagole@admin.com", "ahmedgurey@golaha.com"];
+        const financeUsers = ["cashier@golaha.com"];
+        if (admins.includes(user.email.toLowerCase()) || financeUsers.includes(user.email.toLowerCase())) {
+            document.getElementById('lockoutModal').style.display = 'none';
+            return;
+        }
+
+        const today = new Date();
+        const currentDay = today.getDate(); // 1 to 31
+        const currentMonthKey = `${today.getFullYear()}-${today.getMonth()}`;
+        const records = globalPaymentDataRaw.records || {};
+        const requests = globalPaymentDataRaw.requests || {};
+        
+        // Check Monthly Payment Status
+        const hasPaidMonthly = records[currentMonthKey]?.[currentUserProfileUsername] === true;
+        
+        // 5-Day Grace Period Check
+        const isGracePeriod = currentDay <= 5;
+
+        const lockoutModal = document.getElementById('lockoutModal');
+        
+        // Lock out ONLY if they haven't paid the monthly fee AND the grace period is over (Day 6+)
+        const isLockedOut = !hasPaidMonthly && !isGracePeriod;
+        
+        if (isLockedOut) {
+            lockoutModal.style.display = 'flex';
+            document.getElementById('dashboardArea').classList.add('hidden');
+            document.getElementById('chatSystemWidget').classList.add('hidden');
+            
+            const btn = document.getElementById('lockoutIPaidBtn');
+            const statusMsg = document.getElementById('lockoutStatusMsg');
+            
+            btn.classList.remove('hidden');
+            const isPending = requests[currentMonthKey]?.[currentUserProfileUsername] !== undefined;
+            
+            if (isPending) {
+                btn.disabled = true;
+                btn.className = "w-full py-4 bg-gray-600 text-gray-400 font-black oswald uppercase tracking-widest cursor-not-allowed rounded-xl";
+                statusMsg.innerText = "Codsigaaga oggolaanshaha waa la diray. Fadlan sug inta laga ansixinayo Cashier ama Ahmed Gurey.";
+            } else {
+                btn.disabled = false;
+                btn.className = "w-full py-4 bg-yellow-500 text-black font-black oswald uppercase tracking-widest hover:bg-yellow-400 transition rounded-xl";
+                statusMsg.innerHTML = `<span class="text-red-500 font-black text-sm uppercase block mb-1">⚠️ Waqtiga (Grace Period) Wuu Dhamaaday</span>Nidaamka waa lagaa xiray sababtoo ah maanta waa bisha <b>${currentDay}-deeda</b>, mana aadan bixin khidmadda bishaan.`;
+            }
+        } else {
+            // Access Granted
+            lockoutModal.style.display = 'none';
+            document.getElementById('dashboardArea').classList.remove('hidden');
+            document.getElementById('chatSystemWidget').classList.remove('hidden');
+        }
+    }
+
+    function submitPaymentApprovalRequest() {
+        const today = new Date();
+        const currentMonthKey = `${today.getFullYear()}-${today.getMonth()}`;
+        paymentsRef.child('requests').child(currentMonthKey).child(currentUserProfileUsername).set({
+            email: auth.currentUser.email,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            status: 'PENDING'
+        }).then(() => {
+            logUserActivity('PAYMENT_REQUEST_SUBMITTED', { month: currentMonthKey });
+        });
+    }
+
+    function updateAdminApprovalList(data) {
+        const listContainer = document.getElementById('adminApprovalRequestsList');
+        if (!listContainer) return;
+        listContainer.innerHTML = "";
+        
+        const requests = data.requests || {};
+        let count = 0;
+        
+        for (let monthKey in requests) {
+            for (let username in requests[monthKey]) {
+                count++;
+                const div = document.createElement('div');
+                div.className = "p-3 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2 mb-2 text-left";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-white uppercase tracking-wide text-xs">${username}</div>
+                            <div class="text-[10px] text-gray-400">Requested: ${monthKey}</div>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="approvePaymentRequest('${monthKey}', '${username}')" class="px-2 py-1 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-[9px] uppercase tracking-tighter">Approve</button>
+                            <button onclick="rejectPaymentRequest('${monthKey}', '${username}')" class="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold text-[9px] uppercase tracking-tighter">Deny</button>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            }
+        }
+        if (count === 0) {
+            listContainer.innerHTML = `<div class="text-gray-500 text-center py-3 text-[10px] uppercase font-bold tracking-wider">No pending payment requests</div>`;
+        }
+    }
+
+    function approvePaymentRequest(monthKey, username) {
+        if (!(isUserAdmin || isFinanceUser)) return;
+        paymentsRef.child('records').child(monthKey).child(username).set(true).then(() => {
+            paymentsRef.child('requests').child(monthKey).child(username).remove();
+            logUserActivity('PAYMENT_REQUEST_APPROVED', { player: username, month: monthKey });
+            alert(`Approved! User ${username} is now marked as PAID for this month.`);
+        });
+    }
+    
+    function rejectPaymentRequest(monthKey, username) {
+        if (!(isUserAdmin || isFinanceUser)) return;
+        if (confirm(`Deny and remove pending message request from ${username}?`)) {
+            paymentsRef.child('requests').child(monthKey).child(username).remove();
+            logUserActivity('PAYMENT_REQUEST_REJECTED', { player: username, month: monthKey });
+        }
+    }
+
+    function toggleReportVisibility(isChecked) {
+        if(!isUserAdmin) return;
+        settingsRef.update({ reportVisible: isChecked });
+    }
+
+    function updateGlobalFee(val) {
+        if(!(isUserAdmin || isFinanceUser)) return;
+        paymentsRef.update({ globalFee: parseInt(val) || 0 });
+    }
+
+    function togglePaymentStatus() {
+        const name = document.getElementById('payPlayerSelect').value,
+              yr = document.getElementById('viewYear').value,
+              mo = document.getElementById('selMonth').value;
+        if(!name || mo === "") return alert("Select Player and Month first");
+        const monthKey = `${yr}-${mo}`;
+        const currentStatus = paymentData[monthKey]?.[name] || false;
+        paymentsRef.child('records').child(monthKey).child(name).set(!currentStatus);
+    }
+
+    function updatePaymentReport() {
+        const yr = document.getElementById('anYear').value,
+              mo = document.getElementById('anMonth').value,
+              statusType = document.getElementById('anStatus').value,
+              tableBody = document.getElementById('reportTableBody');
+        if (!tableBody) return;
+        tableBody.innerHTML = "";
+        if (mo === "") {
+            tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-gray-500">Select month to view report</td></tr>`;
+            return;
+        }
+        const monthKey = `${yr}-${mo}`,
+              records = paymentData[monthKey] || {},
+              allPlayers = Object.keys(profiles).sort();
+
+        allPlayers.forEach(name => {
+            if (name === "FULL CASHIER") return; 
+            
+            const hasPaid = records[name] === true;
+            let shouldDisplay = (statusType === 'ALL') || (statusType === 'PAID' && hasPaid) || (statusType === 'UNPAID' && !hasPaid);
+            if (shouldDisplay) {
+                const row = document.createElement('tr');
+                row.className = "border-b border-white/5 hover:bg-white/5 transition";
+                row.innerHTML = `<td class="p-2 font-bold uppercase text-left">${name}</td><td class="p-2 text-center">$${currentFee}</td><td class="p-2 text-right"><span class="px-2 py-1 rounded text-[8px] font-black ${hasPaid ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-500'}">${hasPaid ? 'PAID' : 'UNPAID'}</span></td>`;
+                tableBody.appendChild(row);
+            }
+        });
+    }
+
+    function toggleAuthMode() {
+        authMode = authMode === "LOGIN" ? "SIGNUP" : "LOGIN";
+        document.getElementById('authSubtitle').innerText = authMode === "LOGIN" ? "Secure Access Portal" : "Create New Account";
+        document.getElementById('authSubmitBtn').innerText = authMode === "LOGIN" ? "Login" : "Register Account";
+        document.getElementById('signUpNameContainer').classList.toggle('hidden', authMode === "LOGIN");
+    }
+
+    function handleAuthSubmit() {
+        const email = document.getElementById('loginEmail').value.trim(),
+              pass = document.getElementById('loginPassword').value,
+              selectedProfile = document.getElementById('signUpNameSelect').value,
+              errEl = document.getElementById('loginError');
+        if(!email || !pass) return errEl.innerText = "Fill all fields.";
+        
+        if(authMode === "SIGNUP") {
+            if(!selectedProfile) return errEl.innerText = "Select athlete name.";
+            auth.createUserWithEmailAndPassword(email, pass).then((u) => {
+                u.user.updateProfile({ displayName: selectedProfile });
+                logUserActivity('REGISTER_ACCOUNT',{profile:selectedProfile});
+                return profilesRef.child(selectedProfile).update({ isTaken: true });
+            }).catch(err => { errEl.innerText = err.message; });
+        } else {
+            auth.signInWithEmailAndPassword(email, pass).then(()=>{ setTimeout(()=>logUserActivity('LOGIN'),500); }).catch(err => { errEl.innerText = err.message; });
+        }
+    }
+
+    function logUserActivity(action, details = {}) {
+        const user = auth.currentUser;
+        if (!user) return;
+        logsRef.push({
+            email: user.email || '',
+            name: currentUserProfileUsername || user.displayName || 'Unknown',
+            action,
+            details,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+
+    function handleLogout() { logUserActivity('LOGOUT'); auth.signOut(); }
+
+    function setup() {
+        const viewYear = document.getElementById('viewYear'),
+              inMonth = document.getElementById('inMonth'),
+              selMonth = document.getElementById('selMonth'),
+              anYear = document.getElementById('anYear'),
+              anMonth = document.getElementById('anMonth'),
+              ganYear = document.getElementById('ganYearSelect'),
+              ganMonth = document.getElementById('ganMonthSelect'),
+              ganDay = document.getElementById('ganDaySelect'),
+              editGanYear = document.getElementById('editGanaaxYear'),
+              editGanMonth = document.getElementById('editGanaaxMonth'),
+              editGanDay = document.getElementById('editGanaaxDay');
+              
+        viewYear.innerHTML = '';
+        if(anYear) anYear.innerHTML = '';
+        if(ganYear) ganYear.innerHTML = '';
+        if(editGanYear) editGanYear.innerHTML = '';
+        
+        for (let y = 2026; y <= 2030; y++) {
+            viewYear.innerHTML += `<option value="${y}">${y}</option>`;
+            if(anYear) anYear.innerHTML += `<option value="${y}">${y}</option>`;
+            if(ganYear) ganYear.innerHTML += `<option value="${y}">${y}</option>`;
+            if(editGanYear) editGanYear.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+        
+        inMonth.innerHTML = '';
+        selMonth.innerHTML = '<option value="">-- MONTH --</option>';
+        if(anMonth) anMonth.innerHTML = '<option value="">-- MONTH --</option>';
+        if(ganMonth) ganMonth.innerHTML = '';
+        if(editGanMonth) editGanMonth.innerHTML = '';
+        
+        MONTHS.forEach((m, i) => {
+            inMonth.innerHTML += `<option value="${i}">${m}</option>`;
+            selMonth.innerHTML += `<option value="${i}">${m}</option>`;
+            if(anMonth) anMonth.innerHTML += `<option value="${i}">${m}</option>`;
+            if(ganMonth) ganMonth.innerHTML += `<option value="${i}">${m}</option>`;
+            if(editGanMonth) editGanMonth.innerHTML += `<option value="${i}">${m}</option>`;
+        });
+
+        if(ganDay && editGanDay) {
+            ganDay.innerHTML = '';
+            editGanDay.innerHTML = '';
+            for(let d = 1; d <= 31; d++) {
+                ganDay.innerHTML += `<option value="${d}">${d}</option>`;
+                editGanDay.innerHTML += `<option value="${d}">${d}</option>`;
+            }
+        }
+        
+        const sYear = document.getElementById('ganSearchYear');
+        const sMonth = document.getElementById('ganSearchMonth');
+        const sDay = document.getElementById('ganSearchDay');
+        
+        if(sYear && sMonth && sDay) {
+            sYear.innerHTML = '<option value="">-- ALL YEARS --</option>';
+            for (let y = 2026; y <= 2030; y++) {
+                sYear.innerHTML += `<option value="${y}">${y}</option>`;
+            }
+            
+            sMonth.innerHTML = '<option value="">-- ALL MONTHS --</option>';
+            MONTHS.forEach((m, i) => {
+                sMonth.innerHTML += `<option value="${i}">${m}</option>`;
+            });
+            
+            sDay.innerHTML = '<option value="">-- ALL DAYS --</option>';
+            for(let d = 1; d <= 31; d++) {
+                sDay.innerHTML += `<option value="${d}">${d}</option>`;
+            }
+        }
+    }
+    setup();
+
+    function updateDropdowns() {
+        const adminSel = document.getElementById('pNameSelect'),
+              signUpSel = document.getElementById('signUpNameSelect'),
+              ganSel = document.getElementById('ganPlayerSelect'),
+              fasaxSel = document.getElementById('fasaxPlayerSelect'),
+              allNames = Object.keys(profiles).sort();
+              
+        const adminOptions = '<option value="">-- SELECT NAME --</option>' + allNames.map(n => `<option value="${n}">${n}</option>`).join('');
+        const signUpOptions = '<option value="">-- SELECT NAME --</option>' + allNames.filter(n => !profiles[n].isTaken).map(n => `<option value="${n}">${n}</option>`).join('');
+        
+        if(adminSel) adminSel.innerHTML = adminOptions;
+        if(signUpSel) signUpSel.innerHTML = signUpOptions;
+        if(ganSel) ganSel.innerHTML = adminOptions;
+        if(fasaxSel) fasaxSel.innerHTML = adminOptions;
+    }
+
+    function releaseName(name) {
+        if(confirm(`Make "${name}" available for sign-up again?`)) {
+            profilesRef.child(name).update({ isTaken: false }).then(() => alert("Name released."));
+        }
+    }
+
+    function registerPlayer() {
+        const name = document.getElementById('regName').value.trim().toUpperCase(),
+              photoFile = document.getElementById('regPhoto').files[0];
+        if(!name) return alert("Enter Name");
+        
+        if(photoFile) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilesRef.child(name).set({ photo: e.target.result, isTaken: false });
+                logUserActivity('PLAYER_REGISTERED',{player:name}); alert("Profile Registered with photo!");
+            };
+            reader.readAsDataURL(photoFile);
+        } else {
+            profilesRef.child(name).set({ photo: "", isTaken: false });
+            logUserActivity('PLAYER_REGISTERED',{player:name}); alert("Profile Registered without photo!");
+        }
+    }
+
+    function render() {
+        const yr = document.getElementById('viewYear').value,
+              vM = document.getElementById('selMonth').value,
+              vW = document.getElementById('selWeek').value,
+              body = document.getElementById('pBody');
+        if(!body) return;
+        body.innerHTML = "";
+
+        let winners = {
+            WEEK: [], MONTH: [], YEAR: [],
+            G_WEEK: [], G_MONTH: [], G_YEAR: [],
+            A_WEEK: [], A_MONTH: [], A_YEAR: [],
+            LIST: []
+        };
+
+        for (let playerName in profiles) {
+            let lp = { n: playerName, s: Array(7).fill(0), g: 0, gP: 0, a: 0, aP: 0, y: 0, r: 0, t: 0, count: 0 };
+            let pY = { n: playerName, t: 0 }, pM = { n: playerName, t: 0 }, pW = { n: playerName, t: 0 };
+            let gY = { n: playerName, v: 0 }, gM = { n: playerName, v: 0 }, gW = { n: playerName, v: 0 };
+            let aY = { n: playerName, v: 0 }, aM = { n: playerName, v: 0 }, aW = { n: playerName, v: 0 };
+
+            if (db[yr] && db[yr][playerName]) {
+                for (let m in db[yr][playerName]) {
+                    for (let w in db[yr][playerName][m]) {
+                        let d = db[yr][playerName][m][w];
+                        
+                        let matchSkillsSum = d.sc ? d.sc.reduce((a, b) => a + b, 0) : 0;
+                        let matchGoalPoints = (d.gV || 0) >= 1 ? 6 : 0;
+                        let matchAssistPoints = (d.aV || 0) >= 1 ? 4 : 0;
+                        let matchTotalCalculated = matchSkillsSum + matchGoalPoints + matchAssistPoints;
+
+                        pY.t += matchTotalCalculated;
+                        gY.v += (d.gV || 0);
+                        aY.v += (d.aV || 0);
+
+                        if (m === vM) {
+                            pM.t += matchTotalCalculated;
+                            gM.v += (d.gV || 0);
+                            aM.v += (d.aV || 0);
+                        }
+                        if (vW !== "" && m === vM && w === vW) {
+                            pW.t += matchTotalCalculated;
+                            gW.v += (d.gV || 0);
+                            aW.v += (d.aV || 0);
+                        }
+
+                        if(activeFilter==='YEAR' || (activeFilter==='MONTH' && m===vM) || (activeFilter==='WEEK' && m===vM && w===vW)) {
+                            if(d.sc) d.sc.forEach((v,i) => lp.s[i] += v);
+                            lp.g += (d.gV || 0);
+                            lp.gP += matchGoalPoints; 
+                            lp.a += (d.aV || 0);
+                            lp.aP += matchAssistPoints; 
+                            lp.y += (d.yV || 0);
+                            lp.r += (d.rV || 0);
+                            lp.t += matchTotalCalculated;
+                            lp.count++;
+                        }
+                    }
+                }
+            }
+            winners.WEEK.push(pW); winners.MONTH.push(pM); winners.YEAR.push(pY);
+            winners.G_WEEK.push(gW); winners.G_MONTH.push(gM); winners.G_YEAR.push(gY);
+            winners.A_WEEK.push(aW); winners.A_MONTH.push(aM); winners.A_YEAR.push(aY);
+            if(lp.t > 0) winners.LIST.push(lp);
+        }
+
+        ['WEEK', 'MONTH', 'YEAR'].forEach(t => {
+            const vM_check = document.getElementById('selMonth').value;
+            const vW_check = document.getElementById('selWeek').value;
+            let shouldShow = (t === 'YEAR') || (t === 'MONTH' && vM_check !== "") || (t === 'WEEK' && vM_check !== "" && vW_check !== "");
+            const filteredWinners = winners[t].filter(player => player.t > 0);
+            const hasData = filteredWinners.length > 0;
+
+            if (shouldShow && hasData) {
+                const topMvpPlayer = filteredWinners.sort((a, b) =>
+                    (b.t - a.t) ||
+                    ((winners[`G_${t}`].find(x => x.n === b.n)?.v || 0) - (winners[`G_${t}`].find(x => x.n === a.n)?.v || 0)) ||
+                    ((winners[`A_${t}`].find(x => x.n === b.n)?.v || 0) - (winners[`A_${t}`].find(x => x.n === a.n)?.v || 0))
+                )[0];
+                const topMvp = topMvpPlayer?.n || "---";
+
+                const topScorer = winners[`G_${t}`].sort((a, b) =>
+                    (b.v - a.v) ||
+                    ((winners[`A_${t}`].find(x => x.n === b.n)?.v || 0) - (winners[`A_${t}`].find(x => x.n === a.n)?.v || 0)) ||
+                    ((filteredWinners.find(x => x.n === b.n)?.t || 0) - (filteredWinners.find(x => x.n === a.n)?.t || 0))
+                )[0];
+
+                const topAssist = winners[`A_${t}`].sort((a, b) =>
+                    (b.v - a.v) ||
+                    ((winners[`G_${t}`].find(x => x.n === b.n)?.v || 0) - (winners[`G_${t}`].find(x => x.n === a.n)?.v || 0)) ||
+                    ((filteredWinners.find(x => x.n === b.n)?.t || 0) - (filteredWinners.find(x => x.n === a.n)?.t || 0))
+                )[0];
+
+                document.getElementById(`name-${t}`).innerText = topMvp;
+                document.getElementById(`goal-${t}`).innerText = topScorer?.v > 0 ? `${topScorer.n} (${topScorer.v})` : "---";
+                document.getElementById(`assist-${t}`).innerText = topAssist?.v > 0 ? `${topAssist.n} (${topAssist.v})` : "---";
+                
+                const mvpPhoto = typeof profiles[topMvp] === 'string' ? profiles[topMvp] : profiles[topMvp]?.photo;
+                const scPhoto = typeof profiles[topScorer?.n] === 'string' ? profiles[topScorer?.n] : profiles[topScorer?.n]?.photo;
+                const asPhoto = typeof profiles[topAssist?.n] === 'string' ? profiles[topAssist?.n] : profiles[topAssist?.n]?.photo;
+
+                document.getElementById(`box-${t}`).innerHTML = mvpPhoto ? `<img src="${mvpPhoto}" class="award-img">` : `👑`;
+                document.getElementById(`img-goal-${t}`).innerHTML = (topScorer?.v > 0 && scPhoto) ? `<img src="${scPhoto}" class="award-img">` : `👤`;
+                document.getElementById(`img-assist-${t}`).innerHTML = (topAssist?.v > 0 && asPhoto) ? `<img src="${asPhoto}" class="award-img">` : `👤`;
+                
+                document.getElementById(`box-${t}`).innerHTML += `<span class="mini-badge">👑 MVP</span>`;
+                document.getElementById(`img-goal-${t}`).innerHTML += `<span class="mini-badge">⚽ GOALS</span>`;
+                document.getElementById(`img-assist-${t}`).innerHTML += `<span class="mini-badge">🎯 ASST</span>`;
+            } else {
+                document.getElementById(`name-${t}`).innerText = "---";
+                document.getElementById(`goal-${t}`).innerText = "---";
+                document.getElementById(`assist-${t}`).innerText = "---";
+                document.getElementById(`box-${t}`).innerHTML = `🏆<span class="mini-badge">👑 MVP</span>`;
+                document.getElementById(`img-goal-${t}`).innerHTML = `👤<span class="mini-badge">⚽ GOALS</span>`;
+                document.getElementById(`img-assist-${t}`).innerHTML = `👤<span class="mini-badge">🎯 ASST</span>`;
+            }
+        });
+
+        // Initialize Global Stats Cache
+        currentCalculatedStats = {};
+
+        winners.LIST.sort((a, b) => (b.t-a.t) || (b.g-a.g) || (b.a-a.a)).forEach((p, i) => {
+            // Populate Global Stats Cache for the showReport Modal pop up
+            currentCalculatedStats[p.n] = p;
+
+            let starC = 0;
+            if (p.count > 0) {
+                const pointsPerStar = (p.count * 50) / 5;
+                starC = Math.ceil(p.t / pointsPerStar);
+                if (starC <= 0) starC = 1;
+                starC = Math.min(5, starC);
+            }
+            
+            let sH = "";
+            for(let s=1; s<=5; s++) sH += s <= starC ? `<span class="text-yellow-500 star-glow text-xl">★</span>` : `<span class="text-white/10 text-xl">★</span>`;
+
+            const row = document.createElement('tr');
+            row.setAttribute('onclick', `showReport("${p.n}")`);
+            row.innerHTML = `<td class="text-left oswald uppercase p-4">${p.n}</td><td class="text-center">${sH}</td><td class="text-blue-400">${p.count}</td><td class="hidden text-red-400 font-bold">${p.g}</td><td class="hidden text-green-400 font-bold">${p.a}</td><td class="hidden text-indigo-400 font-bold">${p.s[6] !== undefined ? p.s[6] : 0}</td><td class="hidden admin-only text-yellow-500">${p.y}</td><td class="hidden admin-only text-red-500">${p.r}</td><td class="total-col font-black oswald">${p.t}</td><td><span class="${i+1 === 1 ? 'rank-badge rank-badge-1' : 'rank-badge'}">${i+1 === 1 ? '🥇' : i+1}</span></td>${(isUserAdmin || ['sacadcabdale@golaha.com'].includes((auth.currentUser?.email||'').toLowerCase())) ? `<td class="admin-only space-x-2"><button onclick="event.stopPropagation(); releaseName('${p.n}')" class="text-green-500">🔓</button><button onclick="event.stopPropagation(); editEntry('${p.n}')" class="text-blue-400">✎</button><button onclick="event.stopPropagation(); deleteEntry('${p.n}')" class="text-red-500">✖</button></td>` : ''}`;
+            body.appendChild(row);
+        });
+    }
+
+    function saveStats() {
+        const yr = document.getElementById('viewYear').value,
+              name = document.getElementById('pNameSelect').value,
+              m = document.getElementById('inMonth').value,
+              w = document.getElementById('inWeek').value;
+        if(!name) return alert("Select Player");
+
+        const sc = [1,2,3,4,5,6,7].map(idx => parseInt(document.getElementById('s'+idx).value) || 0);
+        const gV = parseInt(document.getElementById('gA').value) || 0,
+              aV = parseInt(document.getElementById('aA').value) || 0,
+              yV = parseInt(document.getElementById('yCard').value) || 0,
+              rV = parseInt(document.getElementById('rCard').value) || 0;
+
+        const total = sc.reduce((a,b)=>a+b, 0) + (gV >= 1 ? 6 : 0) + (aV >= 1 ? 4 : 0);
+
+        dbRef.child(`${yr}/${name}/${m}/${w}`).set({ sc, gV, aV, yV, rV, total }).then(() => {
+            logUserActivity('ATHLETE_EDITED',{player:name,year:yr,month:m,week:w}); alert("Record Saved Successfully!");
+            [1,2,3,4,5,6,7].forEach(idx => document.getElementById('s'+idx).value = "");
+            document.getElementById('gA').value = "";
+            document.getElementById('aA').value = "";
+            document.getElementById('yCard').value = "";
+            document.getElementById('rCard').value = "";
+        });
+    }
+
+    function saveGanaax() {
+        const name = document.getElementById('ganPlayerSelect').value,
+              price = document.getElementById('ganPriceInput').value,
+              yr = document.getElementById('ganYearSelect').value,
+              mo = document.getElementById('ganMonthSelect').value,
+              day = document.getElementById('ganDaySelect').value,
+              status = document.getElementById('ganStatusInput').value;
+              
+        if (!name || !price) return alert("Fadlan dooro ciyaaryahanka iyo qiimaha.");
+        
+        ganaaxRef.push({
+            name: name,
+            price: parseFloat(price),
+            year: yr,
+            month: mo,
+            day: day,
+            status: status,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            logUserActivity('GANAAX_ADDED', { player: name, price: price });
+            alert("Ganaax si guul leh ayaa loo kaydiyay!");
+            document.getElementById('ganPriceInput').value = "";
+        });
+    }
+
+    function saveFasax() {
+        const name = document.getElementById('fasaxPlayerSelect').value;
+        const status = document.getElementById('fasaxStatusSelect').value;
+        if(!name) return alert("Fadlan dooro magaca ciyaaryahanka.");
+
+        fasaxRef.child(name).set({
+            status: status,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            logUserActivity('FASAX_UPDATED', { player: name, status: status });
+            alert(`Xaaladda fasaxa ee ${name} waxaa loo badalay: ${status}`);
+        });
+    }
+
+    function renderFasaxTable() {
+        const tbody = document.getElementById('fasaxTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        let hasRecords = false;
+
+        for (let name in fasaxData) {
+            const data = fasaxData[name];
+            const status = typeof data === 'object' ? data.status : data;
+            const timestamp = typeof data === 'object' ? data.timestamp : null;
+
+            let timeStr = "N/A";
+            if (timestamp) {
+                const d = new Date(timestamp);
+                timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            const row = document.createElement('tr');
+            row.className = "hover:bg-white/5 transition";
+            
+            const statusHtml = status === 'fasax' 
+                ? `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-red-500/20 text-red-400 uppercase">FASAX</span>` 
+                : `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-green-500/20 text-green-400 uppercase">KASOO NOQDAY</span>`;
+
+            row.innerHTML = `
+                <td class="p-3 font-bold uppercase tracking-wide">${name}</td>
+                <td class="p-3 text-center">${statusHtml}</td>
+                <td class="p-3 text-right text-gray-400 text-[10px]">${timeStr}</td>
+            `;
+            tbody.appendChild(row);
+            hasRecords = true;
+        }
+
+        if (!hasRecords) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-gray-500 uppercase font-bold text-[9px] tracking-widest">No Leave Records Found</td></tr>`;
+        }
+    }
+
+    function renderGanaaxTable(applyFilters = false) {
+        const tbody = document.getElementById('ganTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        const nameQuery = applyFilters ? (document.getElementById('ganSearchName').value || '').trim().toUpperCase() : "";
+        const yearQuery = applyFilters ? document.getElementById('ganSearchYear').value : "";
+        const monthQuery = applyFilters ? document.getElementById('ganSearchMonth').value : "";
+        const dayQuery = applyFilters ? document.getElementById('ganSearchDay').value : "";
+        const statusQuery = applyFilters ? document.getElementById('ganSearchStatus').value : "";
+
+        for (let key in ganaaxData) {
+            const item = ganaaxData[key];
+            const itemName = (item.name || '').toUpperCase();
+            const itemYear = item.year || "";
+            const itemMonth = item.month !== undefined ? String(item.month) : "";
+            const itemDay = item.day !== undefined ? String(item.day) : "";
+            const itemStatus = item.status || "UNPAID"; 
+            const price = parseFloat(item.price || 0);
+
+            if (applyFilters) {
+                if (nameQuery && !itemName.includes(nameQuery)) continue;
+                if (yearQuery && itemYear !== yearQuery) continue;
+                if (monthQuery && itemMonth !== monthQuery) continue;
+                if (dayQuery && itemDay !== dayQuery) continue;
+                if (statusQuery && itemStatus !== statusQuery) continue;
+            }
+
+            let timeStr = `${itemYear}-${MONTHS[itemMonth] || itemMonth}-${itemDay}`;
+            if (item.timestamp) {
+                const dateObj = new Date(item.timestamp);
+                timeStr += " @ " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            const row = document.createElement('tr');
+            row.className = "hover:bg-white/5 transition";
+            row.innerHTML = `
+                <td class="p-3 font-bold uppercase tracking-wide text-white">${item.name}</td>
+                <td class="p-3 text-center text-yellow-500 font-black">$${price}</td>
+                <td class="p-3 text-center text-gray-400 text-[10px]">${timeStr}</td>
+                <td class="p-3 text-center">
+                    <span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider ${itemStatus === 'PAID' || itemStatus === 'APPROVED' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                        ${itemStatus === "APPROVED" ? "APPROVED ✓" : itemStatus}
+                    </span>
+                </td>
+                <td class="p-3 text-right space-x-2">
+                    <button onclick="furEditGanaax('${key}', '${item.name}', ${price}, '${itemYear}', '${itemMonth}', '${itemDay}', '${itemStatus === "APPROVED" ? "APPROVED ✓" : itemStatus}')" class="text-blue-400 hover:text-white transition">✎</button>
+                    <button onclick="tirtirGanaax('${key}')" class="text-red-500 hover:text-white transition">✖</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        if (tbody.innerHTML === "") {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 uppercase font-bold text-[9px] tracking-widest">No matching records found</td></tr>`;
+        }
+    }
+
+    async function tirtirGanaax(key) {
+        if (!isUserAdmin && !isFinanceUser) return alert("Fadlan la xiriir Admin-ka si aad u tirtirto.");
+        if (confirm("⚠️ Ma hubtaa inaad rabto inaad tirtirto ganaaxan?")) {
+            try {
+                await ganaaxRef.child(key).remove();
+                logUserActivity('GANAAX_DELETED', { key: key });
+                alert("✅ Ganaaxa waa la tirtiray.");
+            } catch (err) {
+                alert("Cillad: " + err.message);
+            }
+        }
+    }
+
+    function furEditGanaax(key, name, price, year, month, day, status = "UNPAID") {
+        if (!isUserAdmin && !isFinanceUser) return alert("Fadlan la xiriir Admin-ka si aad wax uga beddesho.");
+        
+        document.getElementById('editGanaaxId').value = key;
+        document.getElementById('editGanaaxMagaca').value = name;
+        document.getElementById('editGanaaxLacagta').value = price;
+        document.getElementById('editGanaaxYear').value = year;
+        document.getElementById('editGanaaxMonth').value = month;
+        document.getElementById('editGanaaxDay').value = day;
+        
+        const statusDropdown = document.getElementById('editGanaaxStatus');
+        if(statusDropdown) statusDropdown.value = status;
+        
+        const modal = document.getElementById('editGanaaxModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function xirEditGanaax() {
+        const modal = document.getElementById('editGanaaxModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    async function kaydiGanaax(event) {
+        event.preventDefault();
+        
+        const key = document.getElementById('editGanaaxId').value;
+        const price = document.getElementById('editGanaaxLacagta').value;
+        const year = document.getElementById('editGanaaxYear').value;
+        const month = document.getElementById('editGanaaxMonth').value;
+        const day = document.getElementById('editGanaaxDay').value;
+        const status = document.getElementById('editGanaaxStatus')?.value || "UNPAID";
+
+        try {
+            await ganaaxRef.child(key).update({
+                price: parseFloat(price),
+                year: year,
+                month: month,
+                day: day,
+                status: status,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            logUserActivity('GANAAX_UPDATED', { key: key, newPrice: price });
+            alert("✅ Ganaaxa waa la cusbooneysiiyay!");
+            xirEditGanaax();
+        } catch (err) {
+            alert("Cillad: " + err.message);
+        }
+    }
+
+    function editEntry(playerName) {
+        const yr = document.getElementById('viewYear').value,
+              m = document.getElementById('selMonth').value,
+              w = document.getElementById('selWeek').value;
+        if(m === "" || w === "") return alert("Select Month and Week filters first to fetch data context.");
+        
+        if(db[yr] && db[yr][playerName] && db[yr][playerName][m] && db[yr][playerName][m][w]) {
+            let d = db[yr][playerName][m][w];
+            document.getElementById('pNameSelect').value = playerName;
+            document.getElementById('inMonth').value = m;
+            document.getElementById('inWeek').value = w;
+            if(d.sc) d.sc.forEach((val, i) => { document.getElementById('s' + (i+1)).value = val; });
+            document.getElementById('gA').value = d.gV || 0;
+            document.getElementById('aA').value = d.aV || 0;
+            document.getElementById('yCard').value = d.yV || 0;
+            document.getElementById('rCard').value = d.rV || 0;
+            switchAdminTab('data');
+        } else {
+            alert(`No history found for ${playerName} in ${MONTHS[m]} Week ${w}`);
+        }
+    }
+
+    function deleteEntry(playerName) {
+        const yr = document.getElementById('viewYear').value,
+              m = document.getElementById('selMonth').value,
+              w = document.getElementById('selWeek').value;
+        if(m === "" || w === "") return alert("Select Month and Week from filters to purge records.");
+        if(confirm(`Erase stats record entry for ${playerName} during Month: ${MONTHS[m]} Week: ${w}?`)) {
+            dbRef.child(`${yr}/${playerName}/${m}/${w}`).remove().then(() => { logUserActivity('ATHLETE_DELETED',{player:playerName,year:yr,month:m,week:w}); alert("Entry Purged."); });
+        }
+    }
+
+    function showReport(playerName) {
+        const data = currentCalculatedStats[playerName];
+        if (!data) return;
+
+        // 1. Populate Text Context Specs
+        document.getElementById('reportName').innerText = playerName;
+        document.getElementById('repMatches').innerText = `${data.count} MATCHES`;
+        document.getElementById('repTotal').innerText = data.t;
+        document.getElementById('repGoals').innerText = data.g;
+        document.getElementById('repAssists').innerText = data.a;
+        document.getElementById('repYellow').innerText = data.y;
+        document.getElementById('repRed').innerText = data.r;
+
+        // 2. Populate Skill Rating Breakdowns (Average based on matches played)
+        for (let i = 1; i <= 7; i++) {
+            document.getElementById(`repS${i}`).innerText = data.s[i - 1] !== undefined ? (data.count > 0 ? (data.s[i-1] / data.count).toFixed(1) : "-") : "-";
+        }
+
+        // 3. Generate Visual Performance Rating Stars
+        const starsEl = document.getElementById('repStars');
+        let starC = 0;
+        if (data.count > 0) {
+            const pointsPerStar = (data.count * 50) / 5;
+            starC = Math.ceil(data.t / pointsPerStar);
+            if (starC <= 0) starC = 1;
+            starC = Math.min(5, starC);
+        }
+        
+        let starHtml = "";
+        for(let s=1; s<=5; s++) starHtml += s <= starC ? `<span class="text-yellow-500 star-glow text-2xl">★</span>` : `<span class="text-white/10 text-2xl">★</span>`;
+        starsEl.innerHTML = starHtml;
+
+        // 4. Populate Profile Avatar Image Asset
+        const userProfile = profiles[playerName];
+        const userPhoto = typeof userProfile === 'string' ? userProfile : userProfile?.photo;
+        const imgContainer = document.getElementById('reportPhoto');
+        const imgEl = imgContainer.querySelector('img');
+
+        if (userPhoto) {
+            imgEl.src = userPhoto;
+            imgEl.classList.remove('hidden');
+        } else {
+            imgEl.src = "";
+            imgEl.classList.add('hidden');
+        }
+
+        // 5. Open Modal
+        const modal = document.getElementById('reportModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeReport(event) {
+        // Closes the window only if background wrapper overlay frame wrapper or X button clicked 
+        if (!event || event.target.id === 'reportModal' || event.target.tagName.toLowerCase() === 'button' || event.target.innerHTML.includes('&times;')) {
+            document.getElementById('reportModal').style.display = 'none';
+        }
+    }
+
+    const originalSwitchAdminTab = switchAdminTab;
+    function switchAdminTab(t) {
+        if(isFinanceUser && !isUserAdmin && (t === 'data' || t === 'reg' || t === 'fasax' || t === 'gan')) {
+            if (t !== 'popup' && t !== 'pay') return;
+        }
+
+        const tabsList = ['data', 'reg', 'pay', 'payAn', 'gan', 'fasax', 'popup'];
+        
+        tabsList.forEach(tab => {
+            let actualFormId = tab + 'Form';
+            if (tab === 'data') actualFormId = 'statsForm';
+            
+            const el = document.getElementById(actualFormId);
+            const btn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            
+            if (el) {
+                if (tab === t) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+            if (btn) {
+                if (tab === t) {
+                    btn.classList.add('text-yellow-500');
+                    btn.classList.remove('text-gray-500');
+                } else {
+                    btn.classList.remove('text-yellow-500');
+                    btn.classList.add('text-gray-500');
+                }
+            }
+        });
+
+        if(t === 'pay' || t === 'gan' || t === 'fasax') {
+            const pSel = document.getElementById('payPlayerSelect');
+            const gSel = document.getElementById('ganPlayerSelect');
+            const fSel = document.getElementById('fasaxPlayerSelect');
+            const mainSelHTML = document.getElementById('pNameSelect').innerHTML;
+            if(pSel) pSel.innerHTML = mainSelHTML;
+            if(gSel) gSel.innerHTML = mainSelHTML;
+            if(fSel) fSel.innerHTML = mainSelHTML;
+        }
+        if(t === 'payAn') {
+            document.getElementById('anYear').innerHTML = document.getElementById('viewYear').innerHTML;
+            document.getElementById('anMonth').innerHTML = document.getElementById('selMonth').innerHTML;
+            updatePaymentReport();
+        }
+    }
+
+    function changeFilter(m) {
+        activeFilter = m;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+        if(m === 'YEAR') document.getElementById('f-YEAR').classList.add('tab-active');
+        else if(m === 'MONTH') document.getElementById('selMonth').classList.add('tab-active');
+        else if(m === 'WEEK') document.getElementById('selWeek').classList.add('tab-active');
+        render();
+    }
+
+    function showLargeView() {
+        const modal = document.getElementById('largeViewModal'),
+              yr = document.getElementById('viewYear').value,
+              mo = document.getElementById('selMonth').value,
+              content = document.getElementById('modalContent');
+        if(!modal || !content) return;
+        if(mo === "") return alert("Please select a valid Month filter first.");
+
+        document.getElementById('largeViewSubtitle').innerText = `${MONTHS[mo]} ${yr} Ledger`;
+        const monthKey = `${yr}-${mo}`,
+              records = paymentData[monthKey] || {},
+              allPlayers = Object.keys(profiles).sort();
+
+        let tableRows = allPlayers.filter(name => name !== "FULL CASHIER").map(name => {
+            const hasPaid = records[name] === true;
+            return `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="p-4 font-bold uppercase tracking-wider">${name}</td>
+                    <td class="p-4 text-center font-black text-yellow-500/80">$${currentFee}</td>
+                    <td class="p-4 text-right">
+                        <span class="px-4 py-2 rounded-xl text-xs font-black tracking-widest ${hasPaid ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}">
+                            ${hasPaid ? '✓ PAID' : '✗ UNPAID'}
+                        </span>
+                    </td>
+                </tr>`;
+        }).join('');
+
+        content.innerHTML = `
+            <table class="w-full text-left border-collapse">
+                <thead class="text-yellow-500 uppercase border-b-2 border-yellow-500/20">
+                    <tr class="text-lg">
+                        <th class="p-4">Athletes Name</th>
+                        <th class="p-4 text-center">Standard Fee</th>
+                        <th class="p-4 text-right">Payment Status</th>
+                    </tr>
+                </thead>
+                <tbody class="text-white text-base divide-y divide-white/5">
+                    ${tableRows}
+                </tbody>
+            </table>
+        `;
+        modal.style.display = 'flex';
+    }
+
+    function closeLargeView(e) { if(!e || e.target.id === 'largeViewModal') document.getElementById('largeViewModal').style.display = 'none'; }
+
+    function setupPresence(user) {
+        const myPresenceRef = presenceRef.child(currentUserProfileUsername);
+        firebase.database().ref('.info/connected').on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                myPresenceRef.onDisconnect().remove();
+                myPresenceRef.set(true);
+                logUserActivity('ONLINE');
+            }
+        });
+        presenceRef.on('value', (snapshot) => {
+            const count = snapshot.numChildren() || 0;
+            const countEl = document.getElementById('onlineCount');
+            if(countEl) countEl.innerText = count;
+        });
+    }
+
+    function showOnlineUsers() {
+        presenceRef.once('value', (snapshot) => {
+            const onlineUsers = snapshot.val() || {},
+                  title = document.getElementById('voteListTitle'),
+                  list = document.getElementById('voteListItems');
+            list.innerHTML = "";
+            title.innerText = "Online Athletes";
+            
+            Object.keys(onlineUsers).forEach(name => {
+                const profile = profiles[name], photo = typeof profile === 'string' ? profile : profile?.photo;
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5 mb-2";
+                div.innerHTML = `<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full border-2 border-green-500 overflow-hidden"><img src="${photo || 'https://via.placeholder.com/50'}" class="w-full h-full object-cover"></div><div class="flex flex-col text-left"><span class="text-xs font-black text-white uppercase oswald">${name}</span><span class="text-[8px] text-green-500 font-bold uppercase">Active Now</span></div></div><div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>`;
+                list.appendChild(div);
+            });
+            document.getElementById('voteListModal').style.display = 'flex';
+        });
+    }
+
+    function showUserAccess(){
+        logsRef.limitToLast(300).once('value',snap=>{
+            const logs=snap.val()||{};
+            const box=document.getElementById('userAccessList');
+            const search=(document.getElementById('userSearchInput')?.value||'').toLowerCase();
+            const filter=(document.getElementById('logFilterSelect')?.value||'ALL');
+            box.innerHTML='';
+            const grouped={};
+            Object.values(logs).forEach(l=>{
+                if(!grouped[l.email]) grouped[l.email]={email:l.email,name:l.name,logs:[]};
+                grouped[l.email].logs.push(l);
+            });
+            Object.values(grouped).forEach(u=>{
+                const visible=u.logs.filter(l=>{
+                    const txt=((l.name||'')+' '+(l.email||'')+' '+(l.action||'')).toLowerCase();
+                    return (filter==='ALL'||l.action===filter) && (!search || txt.includes(search));
+                }).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+                if(!visible.length) return;
+                const latest=visible[0];
+                const latestDate=new Date(latest.timestamp||Date.now()).toLocaleString();
+                let logsHtml='';
+                visible.slice(0,10).forEach(l=>{
+                    const d=new Date(l.timestamp||Date.now()).toLocaleString();
+                    logsHtml += `<div class="text-[10px] border-t border-white/5 pt-1 mt-1"><span class="text-yellow-500">${l.action}</span> • ${d}</div>`;
+                });
+                box.innerHTML += `<div class="mb-3 p-4 rounded-2xl bg-white/5 border border-white/10"><div class="flex justify-between items-center"><div><div class="font-black text-white uppercase">${u.name||'Unknown'}</div><div class="text-gray-400">${u.email||''}</div><div class="text-[10px] text-green-400">Last Activity: ${latestDate}</div></div><div class="flex gap-2"><button onclick="copyUserEmail('${u.email}')" class="px-2 py-1 bg-blue-600/20 text-blue-400 rounded-lg text-[10px]">Copy Email</button></div></div>${logsHtml}</div>`;
+            });
+            if(box.innerHTML==='') box.innerHTML='<div class="text-center text-gray-500 py-6">No users found.</div>';
+            document.getElementById('userAccessModal').classList.remove('hidden');
+        });
+    }
+    
+    function copyUserEmail(email){navigator.clipboard.writeText(email); alert('Email copied: '+email);}
+
+    function resetAllVotes() {
+        if(confirm("Permanently wipe ALL attendance votes?")) {
+            votesRef.remove().then(() => alert("Reset Complete."));
+        }
+    }
+
+    function togglePollVisibility(isChecked) {
+        if(!isUserAdmin) return;
+        settingsRef.update({ pollVisible: isChecked });
+    }
+
+    function savePollText() {
+        const newText = document.getElementById('adminPollTextInput').value.trim();
+        if (!newText) return alert("Fadlan qor fariinta! (Please enter a message).");
+        
+        settingsRef.update({ pollText: newText }).then(() => {
+            alert("Fariinta Codeynta waa la bedelay! (Poll text updated successfully!)");
+        }).catch(err => alert("Error saving text: " + err.message));
+    }
+
+    function updateAttendancePollUI() {
+        let jooge = 0, maqane = 0;
+        const feedContainer = document.getElementById('inlineVoteFeed');
+        if (feedContainer) feedContainer.innerHTML = "";
+        
+        const voteArray = [];
+        
+        for(let key in votes) {
+            if (key === "FULL CASHIER") continue; 
+            
+            const fData = fasaxData[key];
+            const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
+            if (isFasax) continue;
+            
+            const voteData = typeof votes[key] === 'object' ? (votes[key].status ? votes[key] : { status: votes[key], timestamp: null }) : { status: votes[key], timestamp: null };
+            const voteStatus = voteData.status;
+            
+            if(voteStatus === 'JOOGE') jooge++;
+            if(voteStatus === 'MAQANE') maqane++;
+            
+            voteArray.push({ name: key, status: voteStatus, time: voteData.timestamp });
+        }
+        
+        const cJ = document.getElementById('countJooge'), cM = document.getElementById('countMaqane');
+        if(cJ) cJ.innerText = jooge;
+        if(cM) cM.innerText = maqane;
+
+        const jb=document.getElementById('joogeBtn');
+        if(jb){
+            let hasUnpaidGanaax = false;
+            for (let key in ganaaxData) {
+                const item = ganaaxData[key];
+                if ((item.name || '').toUpperCase() === currentUserProfileUsername.toUpperCase() && item.status === 'UNPAID') {
+                    hasUnpaidGanaax = true;
+                    break;
+                }
+            }
+
+            if (hasUnpaidGanaax) {
+                jb.disabled = true;
+                jb.classList.add('opacity-50', 'cursor-not-allowed');
+                jb.innerText = "Jooge (Locked - Ganaax)";
+            } else {
+                jb.disabled = jooge >= 14;
+                jb.classList.toggle('opacity-50', jooge >= 14);
+                jb.classList.remove('cursor-not-allowed');
+                jb.innerText = "Jooge";
+            }
+        }
+        
+        voteArray.sort((a, b) => (b.time || 0) - (a.time || 0));
+        
+        if (feedContainer) {
+            if(voteArray.length === 0) {
+                feedContainer.innerHTML = `<span class="text-xs text-gray-500 font-bold tracking-wide uppercase italic p-1">No responses captured for this session yet.</span>`;
+            } else {
+                voteArray.forEach(v => {
+                    let timeStr = '--:--:-- --';
+                    if (v.time) {
+                        const dateObj = new Date(v.time);
+                        let hours = dateObj.getHours();
+                        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                        const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        const hoursStr = String(hours).padStart(2, '0');
+                        timeStr = `${hoursStr}:${minutes}:${seconds} ${ampm}`;
+                    }
+                    
+                    const isJooge = v.status === 'JOOGE';
+                    
+                    const badge = document.createElement('div');
+                    badge.className = `flex flex-col items-start min-w-[120px] px-3 py-2 rounded-xl border ${isJooge ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`;
+                    badge.innerHTML = `
+                        <span class="text-[11px] font-black uppercase tracking-wider ${isJooge ? 'text-green-400' : 'text-red-400'}">${v.name}</span>
+                        <span class="text-[9px] font-medium text-gray-400 mt-0.5 tracking-tight">${timeStr}</span>
+                    `;
+                    feedContainer.appendChild(badge);
+                });
+            }
+        }
+    }
+
+    function castVote(status) {
+        if(!currentUserProfileUsername || currentUserProfileUsername === "Anonymous") return alert("Please authenticating session.");
+        
+        const fData = fasaxData[currentUserProfileUsername];
+        const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
+        
+        if (isFasax) {
+            alert("Maku codeyn kartid sababtoo ah waxaad ku jirtaa Fasax!");
+            return;
+        }
+
+        if (status === 'JOOGE') {
+            let hasUnpaidGanaax = false;
+            for (let key in ganaaxData) {
+                const item = ganaaxData[key];
+                if ((item.name || '').toUpperCase() === currentUserProfileUsername.toUpperCase() && item.status === 'UNPAID') {
+                    hasUnpaidGanaax = true;
+                    break;
+                }
+            }
+            
+            if (hasUnpaidGanaax) {
+                alert("⚠️ Kuma codeyn kartid 'Jooge' sababtoo ah waxaad qabtaa ganaax aan la bixin. Fadlan iska bixi ganaaxaaga!");
+                return;
+            }
+        }
+
+        let currentJooge = Object.values(votes).filter(v => (typeof v==='object'?v.status:v)==='JOOGE').length;
+        if(status==='JOOGE' && currentJooge >= 15){
+            alert('Jooge votes have reached the limit of 14.');
+            return;
+        }
+
+        // Instant UI update before Firebase responds
+        votes[currentUserProfileUsername] = {
+            status: status,
+            timestamp: Date.now()
+        };
+        updateAttendancePollUI();
+
+        votesRef.child(currentUserProfileUsername).set({
+            status: status,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+
+    
+function deleteAttendanceVote(username){
+    if(!isUserAdmin) return;
+    if(!confirm('Delete vote for '+username+'?')) return;
+    votesRef.child(username).remove();
+}
+
+function showVoterList(type) {
+        const title = document.getElementById('voteListTitle'),
+              list = document.getElementById('voteListItems');
+        if(!list || !title) return;
+        list.innerHTML = "";
+        
+        if (type === 'NONE') {
+            title.innerText = "No Response";
+            Object.keys(profiles).forEach(name => {
+                if (name === "FULL CASHIER") return; 
+                
+                const fData = fasaxData[name];
+                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
+                if (isFasax) return;
+                
+                if (!votes[name]) {
+                    const profile = profiles[name], photo = typeof profile === 'string' ? profile : profile?.photo;
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/10 mb-2";
+                    div.innerHTML = `<div class="w-10 h-10 rounded-full border border-white/10 overflow-hidden"><img src="${photo || 'https://via.placeholder.com/50'}" class="w-full h-full object-cover"></div><span class="text-xs font-black text-white uppercase oswald">${name}</span>`;
+                    list.appendChild(div);
+                }
+            });
+        } else {
+            title.innerText = type === 'JOOGE' ? "Jooge Attendees" : "Maqane Absentees";
+            for(let name in votes) {
+                if (name === "FULL CASHIER") continue; 
+                
+                const fData = fasaxData[name];
+                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
+                if (isFasax) continue;
+                
+                const voteData = typeof votes[name] === 'object' ? votes[name] : { status: votes[name], timestamp: null };
+                
+                if(voteData.status === type) {
+                    const profile = profiles[name], photo = typeof profile === 'string' ? profile : profile?.photo;
+                    
+                    let timeStr = '--:--';
+                    if (voteData.timestamp) {
+                        const d = new Date(voteData.timestamp);
+                        let h = d.getHours();
+                        const m = String(d.getMinutes()).padStart(2,'0');
+                        const s = String(d.getSeconds()).padStart(2,'0');
+                        const ampm = h >= 12 ? 'PM' : 'AM';
+                        h = h % 12 || 12;
+                        timeStr = `${String(h).padStart(2,'0')}:${m}:${s} ${ampm}`;
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/10 mb-2";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full border-2 ${type==='JOOGE'?'border-green-500':'border-red-500'} overflow-hidden">
+                                <img src="${photo || 'https://via.placeholder.com/50'}" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-xs font-black text-white uppercase oswald">${name}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-gray-400">${timeStr}</span>
+${isUserAdmin ? `<button onclick="deleteAttendanceVote('${name}')" class="px-2 py-1 bg-red-600 text-white rounded text-[9px]">Delete</button>` : ``}
+</div>
+                    `;
+                    list.appendChild(div);
+                }
+            }
+        }
+        document.getElementById('voteListModal').style.display = 'flex';
+    }
+
+    function closeVoteList(e) { if(!e || e.target.id === 'voteListModal') document.getElementById('voteListModal').style.display = 'none'; }
+
+    function toggleChatWindow() {
+        const windowEl = document.getElementById('floatingChatWindow');
+        chatIsOpen = (windowEl.style.display !== 'flex');
+        windowEl.style.display = chatIsOpen ? 'flex' : 'none';
+        if (chatIsOpen) {
+            unreadCount = 0;
+            updateBadgeUI();
+            lastSeenMsgTimestamp = Date.now();
+            localStorage.setItem('lastSeenMsg', lastSeenMsgTimestamp);
+            const container = document.getElementById('chatMessageStream');
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    function updateBadgeUI() {
+        const badge = document.getElementById('unreadBadge');
+        if (unreadCount > 0 && !chatIsOpen) {
+            badge.innerText = unreadCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function toggleProfileSettings() {
+        const modal = document.getElementById('profileSettingsModal');
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            const nameInput = document.getElementById('newDisplayName');
+            if (nameInput) nameInput.value = currentUserProfileUsername !== "Anonymous" ? currentUserProfileUsername : "";
+        } else {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    async function saveProfileSettings() {
+        const newPass = document.getElementById('newPassword').value;
+        const photoFile = document.getElementById('newProfilePhoto').files[0];
+        const user = auth.currentUser;
+
+        if (!user) return alert("You must be logged in to change settings.");
+
+        try {
+            // 1. Update Password
+            if (newPass) {
+                await user.updatePassword(newPass);
+            }
+
+            // 2. Update Photo
+            if (photoFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                     profilesRef.child(currentUserProfileUsername).update({ photo: e.target.result, isTaken: true });
+                };
+                reader.readAsDataURL(photoFile);
+            }
+
+            alert("Profile settings updated successfully!");
+            
+            // Clear inputs and close modal
+            document.getElementById('newPassword').value = "";
+            document.getElementById('newProfilePhoto').value = "";
+            toggleProfileSettings();
+
+        } catch (error) {
+            console.error(error);
+            alert("An error occurred while updating your profile: " + error.message);
+        }
+    }
+
+    function sendChatMessage() {
+        const input = document.getElementById('chatTextInput');
+        const text = input.value.trim();
+        if(!text) return;
+        
+        chatRef.push({
+            sender: currentUserProfileUsername,
+            text: text,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            type: 'TEXT'
+        });
+        input.value = '';
+    }
+
+    function editMessage(messageId, currentText) {
+        const newText = prompt("Edit your message:", decodeURIComponent(currentText));
+        if (newText !== null && newText.trim() !== "") {
+            chatRef.child(messageId).update({
+                text: newText.trim(),
+                isEdited: true
+            }).catch(err => alert("Error editing: " + err.message));
+        }
+    }
+
+    function deleteMessage(messageId) {
+        if (confirm("Are you sure you want to delete this message?")) {
+            chatRef.child(messageId).remove()
+            .catch(err => alert("Error deleting: " + err.message));
+        }
+    }
+
+    function uploadChatMediaFile(type) {
+        alert("Media uploads require Firebase Storage configuration. Please use text chat for now.");
+    }
+
+    // --- CELEBRATION POPUP CORE LOGIC ---
+    const celebrationRef = firebase.database().ref('settings/celebrationBanner');
+    let celebrationShownThisSession = false;
+
+    celebrationRef.on('value', (snapshot) => {
+        const bannerData = snapshot.val();
+        if (bannerData) {
+            document.getElementById('celebrationImgDisplay').src = bannerData;
+            document.getElementById('adminCelebrationPreview').src = bannerData;
+            document.getElementById('adminCelebrationPreview').classList.remove('hidden');
+            document.getElementById('noAdminPreviewText').classList.add('hidden');
+            
+            checkAndShowCelebrationPopup();
+        } else {
+            document.getElementById('celebrationImgDisplay').src = "";
+            document.getElementById('adminCelebrationPreview').src = "";
+            document.getElementById('adminCelebrationPreview').classList.add('hidden');
+            document.getElementById('noAdminPreviewText').classList.remove('hidden');
+        }
+    });
+
+    function checkAndShowCelebrationPopup() {
+        if (celebrationShownThisSession) return;
+        
+        const bannerUrl = document.getElementById('celebrationImgDisplay').src;
+        if (!bannerUrl || bannerUrl.endsWith('/')) return;
+
+        const currentDayOfMonth = new Date().getDate();
+        if (currentDayOfMonth >= 1 && currentDayOfMonth <= 5) {
+            celebrationShownThisSession = true;
+            
+            const modal = document.getElementById('celebrationModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            
+            setTimeout(() => {
+                closeCelebrationModal();
+            }, 5000);
+        }
+    }
+
+    function closeCelebrationModal() {
+        const modal = document.getElementById('celebrationModal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+
+    function uploadCelebrationBanner() {
+        const fileInput = document.getElementById('celebrationImageFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert("Fadlan dooro sawir marka hore! (Please choose an image file first).");
+            return;
+        }
+        
+        if (file.size > 1.5 * 1024 * 1024) { 
+            alert("Sawirka aad u weyn yahay! Please choose an image smaller than 1.5 MB.");
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64ImageString = e.target.result;
+            
+            celebrationRef.set(base64ImageString)
+            .then(() => {
+                alert("Celebration banner updated successfully!");
+                fileInput.value = ""; 
+            })
+            .catch((error) => {
+                console.error(error);
+                alert("Error saving banner: " + error.message);
+            });
+        };
+        reader.onerror = function() {
+            alert("Failed to process the image file.");
+        };
+        reader.readAsDataURL(file);
+    }
+
+</script>
+</body>
+</html>

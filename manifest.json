@@ -1,0 +1,15 @@
+{
+  "name": "GOLAHA LABA GOLE",
+  "short_name": "Laba Gole",
+  "start_url": "/labagole/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1b7d3d",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
