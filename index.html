@@ -40,6 +40,17 @@
 
         .oswald { font-family: 'Oswald', sans-serif; }
         .star-glow { text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+        .card-player-tile { background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(20,20,20,0.95)); border: 1px solid rgba(251,191,36,0.25); box-shadow: 0 15px 35px rgba(0,0,0,0.35); border-radius: 28px; }
+        .award-tile { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(251,191,36,0.24); box-shadow: 0 14px 30px rgba(0,0,0,0.25); border-radius: 28px; }
+        .award-tile h5 { position: relative; display: inline-block; padding-bottom: 6px; margin-bottom: 12px; }
+        .award-tile h5::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); bottom: 0; width: 60%; height: 2px; background: rgba(251,191,36,0.8); border-radius: 999px; }
+        .disciplinary-section-title { display: inline-flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .card-player-photo { width: 72px; height: 72px; min-width: 72px; border-radius: 24px; border: 2px solid rgba(251,191,36,0.35); overflow: hidden; background: #090909; display: flex; align-items: center; justify-content: center; }
+        .card-player-name { color: #facc15; font-size: 0.95rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+        .card-player-role { color: #f7f1c7; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.18em; margin-top: 2px; }
+        .card-player-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.85rem; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+        .card-player-badge.red { background: rgba(220, 38, 38, 0.14); color: #fee2e2; border: 1px solid rgba(251, 191, 36, 0.16); }
+        .card-player-badge.yellow { background: rgba(245, 158, 11, 0.14); color: #fef3c7; border: 1px solid rgba(251, 191, 36, 0.16); }
 
         #reportModal, #voteListModal, #largeViewModal, #lockoutModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); padding: 20px; align-items: center; justify-content: center; }
         .report-content { background: #0f172a; border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 32px; max-width: 500px; width: 100%; padding: 32px; position: relative; }
@@ -96,6 +107,8 @@
             background: #f8fafc !important; 
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body id="mainBody">
 
@@ -165,6 +178,10 @@
                 📊 VIEW PAYMENT REPORT
             </button>
             
+            <button id="matchSummaryToggleBtn" onclick="toggleMatchSummary()" class="tab-btn bg-yellow-500 text-black border-none hover:bg-yellow-400 flex items-center gap-2">
+                📝 MATCH SUMMARY
+            </button>
+            
             <button onclick="toggleTheme()" id="themeToggleBtn" class="tab-btn bg-transparent border border-white/20 hover:bg-white/10 text-xl transition flex items-center justify-center" title="Toggle Light/Dark Mode">
                 ☀️
             </button>
@@ -232,46 +249,215 @@
         </div>
     </div>
 
+    <!-- FOOTBALL MATCH SUMMARY FORM -->
+    <div id="footballMatchSummary" class="glass-panel p-8 border border-yellow-500/20 mb-16 hidden">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-yellow-500/30">
+            <h2 class="text-xl font-black oswald text-white uppercase tracking-wider">FOOTBALL MATCH SUMMARY</h2>
+            <div class="flex items-center gap-3">
+                <div class="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                    <span id="matchSummaryDate">---------</span>
+                </div>
+                <button id="matchSummaryScreenshotBtn" onclick="takeMatchSummaryScreenshot()" class="match-summary-control px-5 py-3 rounded-xl bg-yellow-500 text-black font-black text-xs uppercase tracking-wider hover:bg-yellow-400 transition shadow-lg">
+                    📸 SCREENSHOT
+                </button>
+            </div>
+        </div>
+
+        <!-- Match Score Section -->
+        <div class="flex flex-col xl:flex-row items-start justify-between gap-4 mb-12">
+            <!-- Red Team -->
+            <div class="flex flex-col items-center gap-3 flex-1">
+                <div class="w-20 h-20 rounded-full border-4 border-red-600 bg-red-900/30 flex items-center justify-center">
+                    <span class="text-2xl font-black text-red-400">🛡️</span>
+                </div>
+                <h3 class="text-lg font-black text-white uppercase tracking-wide">RED</h3>
+                
+                <!-- Red Team Goals -->
+                <div id="redGoalsDisplay" class="w-full flex flex-wrap justify-center gap-3">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Score Display -->
+            <div class="text-center flex-1 max-w-md mx-auto">
+                <div class="group">
+                    <div class="text-6xl font-black text-white tracking-tighter font-mono transition">
+                        <span id="redScore">--</span><span class="text-yellow-500">:</span><span id="yellowScore">--</span>
+                    </div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">FINAL SCORE</p>
+                </div>
+                <div class="flex justify-center match-summary-control">
+                    <button onclick="openEditGoalsModal()" class="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg uppercase transition admin-only mx-auto">EDIT GOALS</button>
+                </div>
+            </div>
+
+            <!-- Yellow Team -->
+            <div class="flex flex-col items-center gap-3 flex-1">
+                <div class="w-20 h-20 rounded-full border-4 border-yellow-400 bg-yellow-900/30 flex items-center justify-center">
+                    <span class="text-2xl font-black text-yellow-300">🏵️</span>
+                </div>
+                <h3 class="text-lg font-black text-white uppercase tracking-wide">YELLOW</h3>
+                
+                <!-- Yellow Team Goals -->
+                <div id="yellowGoalsDisplay" class="w-full flex flex-wrap justify-center gap-3">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Disciplinary Record -->
+        <div class="mt-6">
+            <div class="disciplinary-section-title">
+                <h3 class="text-sm font-black text-yellow-500 uppercase tracking-widest">DISCIPLINARY RECORD</h3>
+            </div>
+            <div id="disciplinaryRecord" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-xs font-black text-red-400 uppercase mb-3 border-b border-red-400/20 pb-2">Red Cards</h4>
+                    <div id="disciplinaryRed" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black text-yellow-400 uppercase mb-3 border-b border-yellow-400/20 pb-2">Yellow Cards</h4>
+                    <div id="disciplinaryYellow" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Awards Section -->
+        <div>
+            <br><br><h3 class="text-sm font-black text-yellow-500 uppercase tracking-widest mb-8 pb-4 border-b border-white/10">SINGLE AWARDS</h3></br></br>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <!-- Man of the Match -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="manOfMatchImg" src="" alt="Man of Match" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">MAN OF THE MATCH</h5>
+                    <p id="manOfMatchName" class="card-player-name">---</p>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">EXCEPTIONAL PERFORMANCE</p>
+                </div>
+
+                <!-- Top Scorers -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="topScorer1Img" src="" alt="Top Scorer" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">TOP SCORERS</h5>
+                    <div id="topScorersList" class="card-player-name text-sm font-black text-white uppercase">---</div>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">MOST GOALS</p>
+                </div>
+
+                <!-- Best Goal -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="bestGoalImg" src="" alt="Best Goal" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">BEST GOAL</h5>
+                    <p id="bestGoalName" class="card-player-name">---</p>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">SPECTACULAR FINISH</p>
+                </div>
+
+                <!-- Best Midfielder -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="bestMidfielderImg" src="" alt="Best Midfielder" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">BEST MIDFIELDER</h5>
+                    <p id="bestMidfielderName" class="card-player-name">---</p>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">CONTROLLED THE MATCH</p>
+                </div>
+
+                <!-- Best Defender -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="bestDefenderImg" src="" alt="Best Defender" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">BEST DEFENDER</h5>
+                    <p id="bestDefenderName" class="card-player-name">---</p>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">SOLID DEFENSIVE LEAD</p>
+                </div>
+
+                <!-- Best Assist -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="bestAssistImg" src="" alt="Best Assist" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">BEST ASSIST</h5>
+                    <p id="bestAssistName" class="card-player-name">---</p>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">KEY CREATIVE PLAY</p>
+                </div>
+
+                <!-- Top Assist -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="topAssistImg" src="" alt="Top Assist" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">TOP ASSIST</h5>
+                    <div id="topAssistName" class="card-player-name text-sm font-black text-white uppercase">---</div>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">MOST CREATIVE PLAY</p>
+                </div>
+
+                <!-- Best Goalkeeper -->
+                <div class="award-tile text-center">
+                    <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
+                        <img id="bestGoalkeeperImg" src="" alt="Best Goalkeeper" class="w-full h-full object-cover" style="display:none;">
+                    </div>
+                    <h5 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">BEST GOALKEEPER</h5>
+                    <p id="bestGoalkeeperName" class="card-player-name">---</p>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">CRITICAL SAVES</p>
+                </div>
+            </div>
+
+            <!-- Admin Edit Button -->
+            <div class="mt-8 flex justify-center gap-4 pt-4 border-t border-white/10 admin-only match-summary-control">
+                <button onclick="openAwardsEditModal()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl uppercase tracking-wider transition">
+                    ✎ EDIT ALL AWARDS
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
         <div class="award-card">
             <div class="rank-one-tag">WEEKLY LEADERBOARD</div>
             <div class="award-row">
-                <div class="box-side" id="img-goal-WEEK">👤<span class="mini-badge">⚽ GOALS</span></div>
-                <div class="box-main" id="box-WEEK">🏆<span class="mini-badge">👑 MVP</span></div>
-                <div class="box-side" id="img-assist-WEEK">👤<span class="mini-badge">🎯 ASST</span></div>
+                <div class="box-side" id="img-goal-WEEK"></div>
+                <div class="box-main" id="box-WEEK"></div>
+                <div class="box-side" id="img-assist-WEEK"></div>
             </div>
             <div id="name-WEEK" class="name-display text-center">---</div>
             <div class="mt-4 pt-3 border-t border-white/5 text-center text-xs space-y-1">
-                <p class="text-red-400 font-bold">⚽ Top Scorer: <span id="goal-WEEK" class="text-white">---</span></p>
-                <p class="text-green-400 font-bold">🎯 Top Assist: <span id="assist-WEEK" class="text-white">---</span></p>
+                <p class="text-red-400 font-bold">Top Scorer: <span id="goal-WEEK" class="text-white">---</span></p>
+                <p class="text-green-400 font-bold">Top Assist: <span id="assist-WEEK" class="text-white">---</span></p>
             </div>
         </div>
 
         <div class="award-card border-yellow-500/50">
             <div class="rank-one-tag">MONTHLY LEADERBOARD</div>
             <div class="award-row">
-                <div class="box-side" id="img-goal-MONTH">👤<span class="mini-badge">⚽ GOALS</span></div>
-                <div class="box-main" id="box-MONTH">👑<span class="mini-badge">👑 MVP</span></div>
-                <div class="box-side" id="img-assist-MONTH">👤<span class="mini-badge">🎯 ASST</span></div>
+                <div class="box-side" id="img-goal-MONTH"></div>
+                <div class="box-main" id="box-MONTH"></div>
+                <div class="box-side" id="img-assist-MONTH"></div>
             </div>
             <div id="name-MONTH" class="name-display text-center">---</div>
             <div class="mt-4 pt-3 border-t border-white/5 text-center text-xs space-y-1">
-                <p class="text-red-400 font-bold">⚽ Top Scorer: <span id="goal-MONTH" class="text-white">---</span></p>
-                <p class="text-green-400 font-bold">🎯 Top Assist: <span id="assist-MONTH" class="text-white">---</span></p>
+                <p class="text-red-400 font-bold">Top Scorer: <span id="goal-MONTH" class="text-white">---</span></p>
+                <p class="text-green-400 font-bold">Top Assist: <span id="assist-MONTH" class="text-white">---</span></p>
             </div>
         </div>
 
         <div class="award-card">
             <div class="rank-one-tag">SEASON LEGEND</div>
             <div class="award-row">
-                <div class="box-side" id="img-goal-YEAR">👤<span class="mini-badge">⚽ GOALS</span></div>
-                <div class="box-main" id="box-YEAR">🎖️<span class="mini-badge">👑 MVP</span></div>
-                <div class="box-side" id="img-assist-YEAR">👤<span class="mini-badge">🎯 ASST</span></div>
+                <div class="box-side" id="img-goal-YEAR"></div>
+                <div class="box-main" id="box-YEAR"></div>
+                <div class="box-side" id="img-assist-YEAR"></div>
             </div>
             <div id="name-YEAR" class="name-display text-center">---</div>
             <div class="mt-4 pt-3 border-t border-white/5 text-center text-xs space-y-1">
-                <p class="text-red-400 font-bold">⚽ Top Scorer: <span id="goal-YEAR" class="text-white">---</span></p>
-                <p class="text-green-400 font-bold">🎯 Top Assist: <span id="assist-YEAR" class="text-white">---</span></p>
+                <p class="text-red-400 font-bold">Top Scorer: <span id="goal-YEAR" class="text-white">---</span></p>
+                <p class="text-green-400 font-bold">Top Assist: <span id="assist-YEAR" class="text-white">---</span></p>
             </div>
         </div>
     </div>
@@ -291,6 +477,8 @@
                     <button onclick="switchAdminTab('gan')" id="tabGan" class="text-[10px] font-bold uppercase text-gray-500">Ganaax</button>
                     <span class="text-gray-700">|</span>
                     <button onclick="switchAdminTab('fasax')" id="tabFasax" class="text-[10px] font-bold uppercase text-gray-500">Fasax</button>
+                    <span class="text-gray-700">|</span>
+                    <button onclick="switchAdminTab('awards')" id="tabAwards" class="text-[10px] font-bold uppercase text-gray-500">Awards</button>
                     <span class="text-gray-700">|</span>
                     <button onclick="switchAdminTab('popup')" id="tabPopup" class="text-[10px] font-bold uppercase text-gray-500">Celebration</button>
                 </div>
@@ -455,6 +643,49 @@
                                 <tbody id="fasaxTableBody" class="divide-y divide-white/5 font-semibold text-white">
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="awardsForm" class="hidden space-y-4">
+                    <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-4">MATCH AWARDS - EDIT FOR <span id="awardsDateDisplay">WEEK 1</span></h4>
+                    
+                    <div class="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20 mb-4">
+                        <p class="text-[9px] text-blue-300 font-bold uppercase tracking-wide">📅 Selected Period: <span id="awardsSelectedPeriod">2026 - JULY - WEEK 1</span></p>
+                    </div>
+
+                    <!-- Man of the Match -->
+                    <div>
+                        <label class="text-[10px] font-bold text-yellow-400 uppercase ml-1">Man of the Match</label>
+                        <select id="awardsMOM" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none focus:border-yellow-500/50">
+                            <option value="">-- SELECT PLAYER --</option>
+                        </select>
+                    </div>
+
+                    <!-- Top Goal Scorers -->
+                    <div>
+                        <label class="text-[10px] font-bold text-red-400 uppercase ml-1">Top Goal Scorers (Select all with same score)</label>
+                        <div id="awardsTopScorersContainer" class="mt-2 max-h-[150px] overflow-y-auto chat-scroll border border-white/10 bg-black/30 p-3 rounded-xl space-y-2">
+                            <!-- Checkboxes will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Top Assist Makers -->
+                    <div>
+                        <label class="text-[10px] font-bold text-green-400 uppercase ml-1">Top Assist Makers (Select all with same score)</label>
+                        <div id="awardsTopAssistsContainer" class="mt-2 max-h-[150px] overflow-y-auto chat-scroll border border-white/10 bg-black/30 p-3 rounded-xl space-y-2">
+                            <!-- Checkboxes will be populated here -->
+                        </div>
+                    </div>
+
+                    <button onclick="saveMatchAwards()" class="w-full py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
+                        💾 SAVE ALL AWARDS
+                    </button>
+
+                    <div class="border-t border-white/10 pt-4 mt-4">
+                        <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Current Awards Summary</h5>
+                        <div id="awardsSummary" class="text-[9px] space-y-2 bg-black/40 p-3 rounded-xl border border-white/10">
+                            <p class="text-gray-500">Select a different week to view awards</p>
                         </div>
                     </div>
                 </div>
@@ -628,6 +859,122 @@
 
             <button type="submit" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black oswald rounded-2xl uppercase tracking-widest transition mt-4">Kaydi Isbeddelka</button>
         </form>
+    </div>
+</div>
+
+<div id="editAwardsModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-[#0f172a] border border-yellow-500/30 p-8 rounded-3xl shadow-2xl w-full max-w-2xl my-8" onclick="event.stopPropagation()">
+        <button type="button" onclick="closeAwardsEditModal()" class="absolute top-4 right-5 text-2xl text-gray-400 hover:text-white transition">&times;</button>
+        <h2 class="text-2xl font-black text-yellow-500 mb-6 oswald uppercase text-center">EDIT MATCH AWARDS - <span id="editAwardsWeekDisplay">WEEK 1</span></h2>
+        
+        <form id="editAwardsForm" class="space-y-6">
+            <!-- Best Goalkeeper -->
+            <div>
+                <label class="text-[10px] font-bold text-blue-400 uppercase ml-1 block mb-2">Best Goalkeeper</label>
+                <select id="editAwardsGK" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none focus:border-yellow-500/50">
+                    <option value="">-- SELECT PLAYER --</option>
+                </select>
+            </div>
+
+            <!-- Best Defender -->
+            <div>
+                <label class="text-[10px] font-bold text-blue-400 uppercase ml-1 block mb-2">Best Defender</label>
+                <select id="editAwardsDefender" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none focus:border-yellow-500/50">
+                    <option value="">-- SELECT PLAYER --</option>
+                </select>
+            </div>
+
+            <!-- Best Midfielder -->
+            <div>
+                <label class="text-[10px] font-bold text-blue-400 uppercase ml-1 block mb-2">Best Midfielder</label>
+                <select id="editAwardsMidfield" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none focus:border-yellow-500/50">
+                    <option value="">-- SELECT PLAYER --</option>
+                </select>
+            </div>
+
+            <!-- Best Goal -->
+            <div>
+                <label class="text-[10px] font-bold text-orange-400 uppercase ml-1 block mb-2">Best Goal</label>
+                <select id="editAwardsBestGoal" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none focus:border-yellow-500/50">
+                    <option value="">-- SELECT PLAYER --</option>
+                </select>
+            </div>
+
+            <!-- Best Assist -->
+            <div>
+                <label class="text-[10px] font-bold text-green-400 uppercase ml-1 block mb-2">Best Assist (Most Creative Play)</label>
+                <select id="editAwardsBestAssist" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none focus:border-yellow-500/50">
+                    <option value="">-- SELECT PLAYER --</option>
+                </select>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeAwardsEditModal()" class="flex-1 py-4 rounded-xl bg-gray-600 text-white font-black oswald uppercase hover:bg-gray-500 transition tracking-wider">
+                    ✕ CANCEL
+                </button>
+                <button type="button" onclick="saveAllAwardsEdits()" class="flex-1 py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
+                    💾 SAVE
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editScoreModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm justify-center items-center p-4">
+    <div class="bg-[#0f172a] border border-yellow-500/30 p-8 rounded-3xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+        <h2 class="text-2xl font-black text-yellow-500 mb-6 oswald uppercase text-center">EDIT FINAL SCORE</h2>
+        
+        <div class="flex items-center justify-center gap-4 mb-8">
+            <div class="flex-1">
+                <label class="text-[10px] font-bold text-red-400 uppercase ml-1 block mb-2">RED SCORE</label>
+                <input type="number" id="editRedScore" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white text-center text-2xl focus:outline-none focus:border-yellow-500/50" min="0" max="99">
+            </div>
+            <div class="text-2xl font-black text-yellow-500">:</div>
+            <div class="flex-1">
+                <label class="text-[10px] font-bold text-yellow-400 uppercase ml-1 block mb-2">YELLOW SCORE</label>
+                <input type="number" id="editYellowScore" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white text-center text-2xl focus:outline-none focus:border-yellow-500/50" min="0" max="99">
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="button" onclick="closeEditScoreModal()" class="flex-1 py-4 rounded-xl bg-gray-600 text-white font-black oswald uppercase hover:bg-gray-500 transition tracking-wider">
+                ✕ CANCEL
+            </button>
+            <button type="button" onclick="saveEditScore()" class="flex-1 py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
+                💾 SAVE
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="editGoalsModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-[#0f172a] border border-yellow-500/30 p-8 rounded-3xl shadow-2xl w-full max-w-2xl my-8" onclick="event.stopPropagation()">
+        <button type="button" onclick="closeEditGoalsModal()" class="absolute top-4 right-5 text-2xl text-gray-400 hover:text-white transition">&times;</button>
+        <h2 class="text-2xl font-black text-yellow-500 mb-6 oswald uppercase text-center">EDIT PLAYER GOALS - <span id="editGoalsWeekDisplay">WEEK 1</span></h2>
+
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-4 mb-6">
+                <h3 class="text-sm font-black text-yellow-400 uppercase mb-3">Add Guest / Invited Player</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <input type="text" id="guestPlayerName" placeholder="Guest Player Name" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-bold" />
+                    <select id="guestPlayerTeam" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-bold">
+                        <option value="RED">RED</option>
+                        <option value="YELLOW">YELLOW</option>
+                    </select>
+                    <input type="number" id="guestPlayerGoals" placeholder="Goals" min="0" max="20" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-center text-xs font-bold" />
+                </div>
+                <button type="button" onclick="addGuestGoalEntry()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase transition">Add Guest Player</button>
+            </div>
+
+            <div id="editGoalsContainer" class="space-y-4 mb-6 max-h-96 overflow-y-auto"></div>
+
+        <div class="flex gap-3">
+            <button type="button" onclick="closeEditGoalsModal()" class="flex-1 py-4 rounded-xl bg-gray-600 text-white font-black oswald uppercase hover:bg-gray-500 transition tracking-wider">
+                ✕ CANCEL
+            </button>
+            <button type="button" onclick="saveEditedGoals()" class="flex-1 py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
+                💾 SAVE GOALS
+            </button>
+        </div>
     </div>
 </div>
 
@@ -1523,6 +1870,71 @@
 
     function handleLogout() { logUserActivity('LOGOUT'); auth.signOut(); }
 
+    async function takeMatchSummaryScreenshot() {
+        const summaryEl = document.getElementById('footballMatchSummary');
+        if (!summaryEl) return;
+
+        if (typeof html2canvas === 'undefined') {
+            alert('Screenshot tool is not available. Please check your internet connection and try again.');
+            return;
+        }
+
+        const screenshotBtn = document.getElementById('matchSummaryScreenshotBtn');
+        const controls = summaryEl.querySelectorAll('.match-summary-control');
+        const originalDisplay = [];
+
+        // Temporarily hide all controls/buttons so they are not included in the screenshot.
+        controls.forEach((el, index) => {
+            originalDisplay[index] = el.style.display;
+            el.style.display = 'none';
+        });
+
+        if (screenshotBtn) {
+            screenshotBtn.disabled = true;
+        }
+
+        try {
+            // Give the browser a moment to reflow after hiding controls.
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+            const canvas = await html2canvas(summaryEl, {
+                backgroundColor: null,
+                useCORS: true,
+                allowTaint: false,
+                scale: Math.min(2, window.devicePixelRatio || 1),
+                logging: false
+            });
+
+            const link = document.createElement('a');
+            const dateText = (document.getElementById('matchSummaryDate')?.innerText || 'match-summary')
+                .trim()
+                .replace(/[^a-z0-9_-]+/gi, '-');
+            link.download = `football-match-summary-${dateText || 'match'}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (error) {
+            console.error('Error taking football match summary screenshot:', error);
+            alert('Unable to take the screenshot. Please try again.');
+        } finally {
+            // Restore the page exactly as it was before the screenshot.
+            controls.forEach((el, index) => {
+                el.style.display = originalDisplay[index];
+            });
+            if (screenshotBtn) {
+                screenshotBtn.disabled = false;
+            }
+        }
+    }
+
+    function toggleMatchSummary() {
+        const summaryEl = document.getElementById('footballMatchSummary');
+        if (!summaryEl) return;
+        summaryEl.classList.toggle('hidden');
+        if (!summaryEl.classList.contains('hidden')) {
+            populateMatchSummary();
+        }
+    }
+
     function setup() {
         const viewYear = document.getElementById('viewYear'),
               inMonth = document.getElementById('inMonth'),
@@ -1735,20 +2147,16 @@
                 const scPhoto = typeof profiles[topScorer?.n] === 'string' ? profiles[topScorer?.n] : profiles[topScorer?.n]?.photo;
                 const asPhoto = typeof profiles[topAssist?.n] === 'string' ? profiles[topAssist?.n] : profiles[topAssist?.n]?.photo;
 
-                document.getElementById(`box-${t}`).innerHTML = mvpPhoto ? `<img src="${mvpPhoto}" class="award-img">` : `👑`;
-                document.getElementById(`img-goal-${t}`).innerHTML = (topScorer?.v > 0 && scPhoto) ? `<img src="${scPhoto}" class="award-img">` : `👤`;
-                document.getElementById(`img-assist-${t}`).innerHTML = (topAssist?.v > 0 && asPhoto) ? `<img src="${asPhoto}" class="award-img">` : `👤`;
-                
-                document.getElementById(`box-${t}`).innerHTML += `<span class="mini-badge">👑 MVP</span>`;
-                document.getElementById(`img-goal-${t}`).innerHTML += `<span class="mini-badge">⚽ GOALS</span>`;
-                document.getElementById(`img-assist-${t}`).innerHTML += `<span class="mini-badge">🎯 ASST</span>`;
+                document.getElementById(`box-${t}`).innerHTML = mvpPhoto ? `<img src="${mvpPhoto}" class="award-img">` : '';
+                document.getElementById(`img-goal-${t}`).innerHTML = (topScorer?.v > 0 && scPhoto) ? `<img src="${scPhoto}" class="award-img">` : '';
+                document.getElementById(`img-assist-${t}`).innerHTML = (topAssist?.v > 0 && asPhoto) ? `<img src="${asPhoto}" class="award-img">` : '';
             } else {
                 document.getElementById(`name-${t}`).innerText = "---";
                 document.getElementById(`goal-${t}`).innerText = "---";
                 document.getElementById(`assist-${t}`).innerText = "---";
-                document.getElementById(`box-${t}`).innerHTML = `🏆<span class="mini-badge">👑 MVP</span>`;
-                document.getElementById(`img-goal-${t}`).innerHTML = `👤<span class="mini-badge">⚽ GOALS</span>`;
-                document.getElementById(`img-assist-${t}`).innerHTML = `👤<span class="mini-badge">🎯 ASST</span>`;
+                document.getElementById(`box-${t}`).innerHTML = '';
+                document.getElementById(`img-goal-${t}`).innerHTML = '';
+                document.getElementById(`img-assist-${t}`).innerHTML = '';
             }
         });
 
@@ -1775,6 +2183,9 @@
             row.innerHTML = `<td class="text-left oswald uppercase p-4">${p.n}</td><td class="text-center">${sH}</td><td class="text-blue-400">${p.count}</td><td class="hidden text-red-400 font-bold">${p.g}</td><td class="hidden text-green-400 font-bold">${p.a}</td><td class="hidden text-indigo-400 font-bold">${p.s[6] !== undefined ? p.s[6] : 0}</td><td class="hidden admin-only text-yellow-500">${p.y}</td><td class="hidden admin-only text-red-500">${p.r}</td><td class="total-col font-black oswald">${p.t}</td><td><span class="${i+1 === 1 ? 'rank-badge rank-badge-1' : 'rank-badge'}">${i+1 === 1 ? '🥇' : i+1}</span></td>${(isUserAdmin || ['sacadcabdale@golaha.com'].includes((auth.currentUser?.email||'').toLowerCase())) ? `<td class="admin-only space-x-2"><button onclick="event.stopPropagation(); releaseName('${p.n}')" class="text-green-500">🔓</button><button onclick="event.stopPropagation(); editEntry('${p.n}')" class="text-blue-400">✎</button><button onclick="event.stopPropagation(); deleteEntry('${p.n}')" class="text-red-500">✖</button></td>` : ''}`;
             body.appendChild(row);
         });
+
+        // Populate the match summary with current data
+        populateMatchSummary();
     }
 
     function saveStats() {
@@ -1878,6 +2289,869 @@
         if (!hasRecords) {
             tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-gray-500 uppercase font-bold text-[9px] tracking-widest">No Leave Records Found</td></tr>`;
         }
+    }
+
+    function populateMatchSummary() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        if (!yr || !vM || !vW) return;
+
+        const dateLabel = document.getElementById('matchSummaryDate');
+        if (dateLabel) {
+            const monthText = Array.isArray(MONTHS) ? MONTHS[parseInt(vM)] || 'UNKNOWN' : 'UNKNOWN';
+            dateLabel.innerText = `WEEK ${vW} • ${monthText.toUpperCase()} ${yr}`;
+        }
+
+        document.getElementById('manOfMatchName').innerText = '';
+        document.getElementById('topScorersList').innerHTML = '';
+        document.getElementById('bestGoalName').innerText = '';
+        document.getElementById('bestMidfielderName').innerText = '';
+        document.getElementById('bestDefenderName').innerText = '';
+        document.getElementById('bestAssistName').innerText = '';
+        document.getElementById('topAssistName').innerText = '';
+
+        let redGoals = {}, yellowGoals = {}, allAssists = {}, playerStats = {};
+        let topMvpPlayer = null, topMvpScore = 0;
+
+        console.log('Loading data for:', yr, vM, vW);
+        console.log('Available players in profiles:', Object.keys(profiles).slice(0, 5));
+        console.log('Database structure sample:', db[yr] ? 'Found' : 'Not found');
+
+        const playerNames = new Set(Object.keys(profiles));
+        if (db[yr]) Object.keys(db[yr]).forEach(name => playerNames.add(name));
+
+        // Collect goals, assists, and overall performance from database
+        for (let playerName of playerNames) {
+            if (db[yr] && db[yr][playerName] && db[yr][playerName][vM]) {
+                let stats = db[yr][playerName][vM][vW];
+                if (stats) {
+                    const goals = stats.gV || 0;
+                    const assists = stats.aV || 0;
+                    const yellows = stats.yV || 0;
+                    const reds = stats.rV || 0;
+                    const skillSum = (stats.sc || []).reduce((a, b) => a + b, 0);
+                    const totalScore = skillSum + (goals >= 1 ? 6 : 0) + (assists >= 1 ? 4 : 0);
+
+                    if (goals > 0) {
+                        console.log(`${playerName} scored ${goals} goals`);
+                    }
+
+                    playerStats[playerName] = {
+                        name: playerName,
+                        goals,
+                        assists,
+                        yV: yellows,
+                        rV: reds,
+                        skillSum,
+                        totalScore
+                    };
+
+                    if (totalScore > topMvpScore) {
+                        topMvpScore = totalScore;
+                        topMvpPlayer = playerName;
+                    }
+
+                    let playerTeam = 'YELLOW';
+                    if (stats.team) {
+                        playerTeam = stats.team;
+                    } else if (playerName.includes('(R)')) {
+                        playerTeam = 'RED';
+                    } else if (playerName.includes('Red')) {
+                        playerTeam = 'RED';
+                    } else if (playerName.includes('(Y)') || playerName.includes('Yellow')) {
+                        playerTeam = 'YELLOW';
+                    }
+
+                    playerStats[playerName].team = playerTeam;
+
+                    if (goals > 0) {
+                        if (playerTeam === 'RED') {
+                            redGoals[playerName] = goals;
+                        } else {
+                            yellowGoals[playerName] = goals;
+                        }
+                    }
+
+                    if (assists > 0) {
+                        allAssists[playerName] = assists;
+                    }
+                }
+            }
+        }
+
+        // Find top scorers (including ties)
+        const topGoalCount = Math.max(...Object.values(redGoals).concat(Object.values(yellowGoals)), 0);
+        const topScorers = Object.entries(redGoals).concat(Object.entries(yellowGoals))
+            .filter(([_, count]) => count === topGoalCount && topGoalCount > 0)
+            .map(([name]) => name);
+
+        // Find top assist makers (including ties)
+        const topAssistCount = Math.max(...Object.values(allAssists), 0);
+        const topAssisters = Object.entries(allAssists)
+            .filter(([_, count]) => count === topAssistCount && topAssistCount > 0)
+            .map(([name]) => name);
+
+        const totalRedGoals = Object.values(redGoals).reduce((a, b) => a + b, 0);
+        const totalYellowGoals = Object.values(yellowGoals).reduce((a, b) => a + b, 0);
+
+        const redGoalsDisplay = document.getElementById('redGoalsDisplay');
+        if (redGoalsDisplay) {
+            if (Object.keys(redGoals).length > 0) {
+                redGoalsDisplay.innerHTML = Object.entries(redGoals)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([name, count]) => {
+                        const playerPhoto = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
+                        return `
+                            <div class="flex flex-col items-center gap-1 px-2">
+                                <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 border border-red-500/50 flex items-center justify-center">
+                                    ${playerPhoto ? `<img src="${playerPhoto}" alt="${name}" class="w-full h-full object-cover">` : '<span class="text-xl">👤</span>'}
+                                </div>
+                                <p class="text-[11px] font-bold text-white text-center leading-tight max-w-[50px]">${name}</p>
+                                <p class="text-[9px] text-red-400 font-black">⚽ x${count}</p>
+                            </div>
+                        `;
+                    }).join('');
+                redGoalsDisplay.innerHTML += `<div class="mt-3 text-xs text-red-400 font-bold uppercase">Team Total: ${totalRedGoals}</div>`;
+            } else {
+                redGoalsDisplay.innerHTML = '<div class="text-gray-500 text-xs">No goals</div>';
+            }
+        }
+
+        const yellowGoalsDisplay = document.getElementById('yellowGoalsDisplay');
+        if (yellowGoalsDisplay) {
+            if (Object.keys(yellowGoals).length > 0) {
+                yellowGoalsDisplay.innerHTML = Object.entries(yellowGoals)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([name, count]) => {
+                        const playerPhoto = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
+                        return `
+                            <div class="flex flex-col items-center gap-1 px-2">
+                                <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 border border-yellow-500/50 flex items-center justify-center">
+                                    ${playerPhoto ? `<img src="${playerPhoto}" alt="${name}" class="w-full h-full object-cover">` : '<span class="text-xl">👤</span>'}
+                                </div>
+                                <p class="text-[11px] font-bold text-white text-center leading-tight max-w-[50px]">${name}</p>
+                                <p class="text-[9px] text-yellow-400 font-black">⚽ x${count}</p>
+                            </div>
+                        `;
+                    }).join('');
+                yellowGoalsDisplay.innerHTML += `<div class="mt-3 text-xs text-yellow-400 font-bold uppercase">Team Total: ${totalYellowGoals}</div>`;
+            } else {
+                yellowGoalsDisplay.innerHTML = '<div class="text-gray-500 text-xs">No goals</div>';
+            }
+        }
+
+        // Populate Top Assists (show all with same top count) - OLD SECTION KEPT FOR REFERENCE
+        const topAssistsList = document.getElementById('topAssistsList');
+        if (topAssistsList) {
+            topAssistsList.innerHTML = topAssisters.length > 0
+                ? topAssisters
+                    .map(name => `
+                        <div class="flex items-center gap-2">
+                            <span class="text-green-500 font-black">🎯</span>
+                            <span class="text-white font-bold">${name}</span>
+                            <span class="text-gray-500 text-xs">x${topAssistCount}</span>
+                        </div>
+                    `).join('')
+                : '<div class="text-gray-500 text-xs">No assists recorded</div>';
+        }
+
+        const renderCardedPlayers = () => {
+            const redCardsEl = document.getElementById('redCardsDisplay');
+            const yellowCardsEl = document.getElementById('yellowCardsDisplay');
+            const discRed = document.getElementById('disciplinaryRed');
+            const discYellow = document.getElementById('disciplinaryYellow');
+            if (!redCardsEl && !yellowCardsEl && !discRed && !discYellow) return;
+
+            const cardedPlayers = Object.values(playerStats)
+                .filter(player => player.yV > 0 || player.rV > 0)
+                .sort((a, b) => {
+                    if (b.rV !== a.rV) return b.rV - a.rV;
+                    if (b.yV !== a.yV) return b.yV - a.yV;
+                    return a.name.localeCompare(b.name);
+                });
+
+            const redPlayers = cardedPlayers.filter(p => p.rV > 0);
+            const yellowPlayers = cardedPlayers.filter(p => p.yV > 0);
+
+            const renderSmall = (player) => {
+                const photo = typeof profiles[player.name] === 'string' ? profiles[player.name] : profiles[player.name]?.photo;
+                return `
+                    <div class="flex flex-col items-center gap-1 px-2">
+                        <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 border border-white/10 flex items-center justify-center">
+                            ${photo ? `<img src="${photo}" alt="${player.name}" class="w-full h-full object-cover">` : '<span class="text-xl">👤</span>'}
+                        </div>
+                        <p class="text-[11px] font-bold text-white text-center leading-tight max-w-[60px]">${player.name}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            ${player.rV > 0 ? `<span class="text-[10px] px-2 py-1 rounded-full bg-red-600/20 text-red-100 border border-red-500">🟥 ${player.rV}</span>` : ''}
+                            ${player.yV > 0 ? `<span class="text-[10px] px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-100 border border-yellow-400">🟨 ${player.yV}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            };
+
+            if (redCardsEl) {
+                redCardsEl.innerHTML = redPlayers.length > 0 ? redPlayers.map(renderSmall).join('') : '<div class="text-gray-500 text-xs">No cards</div>';
+            }
+            if (yellowCardsEl) {
+                yellowCardsEl.innerHTML = yellowPlayers.length > 0 ? yellowPlayers.map(renderSmall).join('') : '<div class="text-gray-500 text-xs">No cards</div>';
+            }
+
+            // Populate Disciplinary Record section if present using award-style tiles
+            const renderDisciplinary = (player, type) => {
+                const photo = typeof profiles[player.name] === 'string' ? profiles[player.name] : profiles[player.name]?.photo;
+                return `
+                    <div class="award-tile text-center p-4">
+                        <div class="card-player-photo mx-auto mb-3 rounded-2xl overflow-hidden bg-black/40 border ${type === 'RED' ? 'border-red-500/40' : 'border-yellow-500/40'}">
+                            ${photo ? `<img src="${photo}" alt="${player.name}" class="w-full h-full object-cover">` : '<span class="text-2xl">👤</span>'}
+                        </div>
+                        <p class="card-player-name mb-1">${player.name}</p>
+                        <p class="card-player-role ${type === 'RED' ? 'text-red-400' : 'text-yellow-400'}">${type === 'RED' ? 'RED CARD' : 'YELLOW CARD'}</p>
+                        <div class="mt-3 inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 ${type === 'RED' ? 'bg-red-600/20 text-red-100 border border-red-500' : 'bg-yellow-500/20 text-yellow-100 border border-yellow-400'} text-[10px] font-semibold">
+                            ${type === 'RED' ? `🟥 ${player.rV}` : `🟨 ${player.yV}`}
+                        </div>
+                    </div>
+                `;
+            };
+            if (discRed) discRed.innerHTML = redPlayers.length > 0 ? redPlayers.map(player => renderDisciplinary(player, 'RED')).join('') : '<div class="text-gray-500 text-xs">No red cards</div>';
+            if (discYellow) discYellow.innerHTML = yellowPlayers.length > 0 ? yellowPlayers.map(player => renderDisciplinary(player, 'YELLOW')).join('') : '<div class="text-gray-500 text-xs">No yellow cards</div>';
+        };
+
+        renderCardedPlayers();
+
+        // Save match summary to database (year-month-week)
+        try {
+            const scoreKey = `${yr}-${vM}-${vW}`;
+            const summaryRef = firebase.database().ref(`golaha_match_summary/${scoreKey}`);
+            const manOfMatch = document.getElementById('manOfMatchName')?.innerText || '';
+            const summaryData = {
+                year: yr,
+                month: vM,
+                week: vW,
+                redGoals,
+                yellowGoals,
+                topScorers,
+                topAssisters,
+                playerStats,
+                totalRedGoals,
+                totalYellowGoals,
+                manOfMatch,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            summaryRef.update(summaryData).then(() => console.log('Match summary saved')).catch(err => console.error('Error saving match summary', err));
+        } catch (e) {
+            console.error('Error preparing match summary save', e);
+        }
+
+        // Update score display - check for saved score first, otherwise use calculated goals
+        const scoreKey = `${yr}-${vM}-${vW}`;
+        const scoreRef = firebase.database().ref(`golaha_match_score/${scoreKey}`);
+        
+        scoreRef.once('value', (snapshot) => {
+            const redScoreEl = document.getElementById('redScore');
+            const yellowScoreEl = document.getElementById('yellowScore');
+            
+            if (snapshot.exists()) {
+                // Use saved score
+                const savedScore = snapshot.val();
+                if (redScoreEl) redScoreEl.innerText = String(savedScore.redScore);
+                if (yellowScoreEl) yellowScoreEl.innerText = String(savedScore.yellowScore);
+            } else {
+                // Use calculated goals
+                const totalRedGoals = Object.values(redGoals).reduce((a, b) => a + b, 0);
+                const totalYellowGoals = Object.values(yellowGoals).reduce((a, b) => a + b, 0);
+                if (redScoreEl) redScoreEl.innerText = String(totalRedGoals);
+                if (yellowScoreEl) yellowScoreEl.innerText = String(totalYellowGoals);
+            }
+        }).catch(err => {
+            // Fallback to calculated goals if database read fails
+            const totalRedGoals = Object.values(redGoals).reduce((a, b) => a + b, 0);
+            const totalYellowGoals = Object.values(yellowGoals).reduce((a, b) => a + b, 0);
+            const redScoreEl = document.getElementById('redScore');
+            const yellowScoreEl = document.getElementById('yellowScore');
+            if (redScoreEl) redScoreEl.innerText = String(totalRedGoals);
+            if (yellowScoreEl) yellowScoreEl.innerText = String(totalYellowGoals);
+        });
+
+        const awardsKey = `${yr}-${vM}-${vW}`;
+        const awardsRef = firebase.database().ref(`golaha_match_awards/${awardsKey}`);
+        const summaryRef = firebase.database().ref(`golaha_match_summary/${scoreKey}`);
+
+        const setAwardImage = (imgId, name) => {
+            const imgEl = document.getElementById(imgId);
+            if (!imgEl) return;
+            const wrapper = imgEl.parentElement;
+            if (!name) {
+                imgEl.style.display = 'none';
+                imgEl.src = '';
+                if (wrapper) wrapper.style.display = 'none';
+                return;
+            }
+            const photo = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
+            if (photo) {
+                imgEl.src = photo;
+                imgEl.style.display = '';
+                if (wrapper) wrapper.style.display = '';
+            } else {
+                imgEl.style.display = 'none';
+                imgEl.src = '';
+                if (wrapper) wrapper.style.display = 'none';
+            }
+        };
+
+        const setWinnerNames = (names, targetId, count = null) => {
+            const container = document.getElementById(targetId);
+            if (!container) return;
+            if (!names || names.length === 0) {
+                container.innerHTML = '<p class="card-player-name text-sm font-black text-white uppercase">---</p>';
+                return;
+            }
+
+            const photoHtml = (name, size = 'w-16 h-16') => {
+                const photo = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
+                return `
+                    <div class="${size} rounded-full overflow-hidden bg-black border border-yellow-500/20 shadow-lg">
+                        ${photo ? `<img src="${photo}" alt="${name}" class="w-full h-full object-cover">` : '<span class="text-2xl">👤</span>'}
+                    </div>
+                `;
+            };
+
+            if (names.length === 1) {
+                const name = names[0];
+                const countText = count ? ` x${count}` : '';
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center gap-3">
+                        <div class="bg-black/90 rounded-2xl p-4 flex items-center justify-center">
+                            ${photoHtml(name, 'w-20 h-20')}
+                        </div>
+                        <div class="text-center">
+                            <p class="card-player-name text-[0.95rem]">${name}${countText}</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const countText = count ? ` x${count}` : '';
+            container.innerHTML = `
+                <div class="bg-black/90 rounded-2xl p-4 flex items-center justify-center">
+                    <div class="grid grid-cols-2 gap-3">
+                        ${names.map(name => photoHtml(name, 'w-14 h-14')).join('')}
+                    </div>
+                </div>
+                <div class="mt-3 flex flex-wrap justify-center gap-3">
+                    ${names.map(name => `<p class="text-xs font-black uppercase text-white text-center max-w-[100px]">${name}${countText}</p>`).join('')}
+                </div>
+            `;
+        };
+
+        const applySavedAwards = (savedAwards = {}) => {
+            const manOfMatchName = savedAwards?.manOfMatch || topMvpPlayer || '';
+            const topScorerNames = Array.isArray(savedAwards?.topScorers) && savedAwards.topScorers.length > 0 ? savedAwards.topScorers : topScorers;
+            const topAssistNames = Array.isArray(savedAwards?.topAssisters) && savedAwards.topAssisters.length > 0 ? savedAwards.topAssisters : topAssisters;
+
+            document.getElementById('manOfMatchName').innerText = manOfMatchName || '';
+            setAwardImage('manOfMatchImg', manOfMatchName);
+
+            setWinnerNames(topScorerNames, 'topScorersList', topGoalCount > 0 ? topGoalCount : null);
+            setAwardImage('topScorer1Img', '');
+
+            if (savedAwards?.bestGoal) {
+                document.getElementById('bestGoalName').innerText = savedAwards.bestGoal;
+                setAwardImage('bestGoalImg', savedAwards.bestGoal);
+            }
+            if (savedAwards?.bestMidfield) {
+                document.getElementById('bestMidfielderName').innerText = savedAwards.bestMidfield;
+                setAwardImage('bestMidfielderImg', savedAwards.bestMidfield);
+            }
+            if (savedAwards?.bestDefender) {
+                document.getElementById('bestDefenderName').innerText = savedAwards.bestDefender;
+                setAwardImage('bestDefenderImg', savedAwards.bestDefender);
+            }
+            if (savedAwards?.bestAssist) {
+                document.getElementById('bestAssistName').innerText = savedAwards.bestAssist;
+                setAwardImage('bestAssistImg', savedAwards.bestAssist);
+            }
+            if (savedAwards?.bestGoalkeeper) {
+                document.getElementById('bestGoalkeeperName').innerText = savedAwards.bestGoalkeeper;
+                setAwardImage('bestGoalkeeperImg', savedAwards.bestGoalkeeper);
+            }
+
+            setWinnerNames(topAssistNames, 'topAssistName', topAssistCount > 0 ? topAssistCount : null);
+            setAwardImage('topAssistImg', '');
+        };
+
+        Promise.all([awardsRef.once('value'), summaryRef.once('value')])
+            .then(([awardsSnapshot, summarySnapshot]) => {
+                const awardsData = awardsSnapshot.exists() ? awardsSnapshot.val() : {};
+                const summaryData = summarySnapshot.exists() ? summarySnapshot.val() : {};
+                const dbAwards = { ...summaryData, ...awardsData };
+                applySavedAwards(dbAwards);
+            })
+            .catch(err => {
+                console.error('Error loading saved awards or summary:', err);
+                applySavedAwards();
+            });
+
+        // Store current awards for admin form
+        window.currentAwards = {
+            year: yr,
+            month: vM,
+            week: vW,
+            manOfMatch: topMvpPlayer || '',
+            topScorers: topScorers,
+            topAssisters: topAssisters
+        };
+    }
+
+    function populateAwardsForm() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        if (!yr || !vM || !vW) return alert('Please select Year, Month, and Week first');
+
+        // Update header
+        document.getElementById('awardsDateDisplay').innerText = `WEEK ${vW}`;
+        document.getElementById('awardsSelectedPeriod').innerText = `${yr} - ${MONTHS[vM]} - WEEK ${vW}`;
+
+        // Populate player dropdowns and checkboxes
+        const momSelect = document.getElementById('awardsMOM');
+        momSelect.innerHTML = '<option value="">-- SELECT PLAYER --</option>';
+
+        const topScorersContainer = document.getElementById('awardsTopScorersContainer');
+        const topAssistsContainer = document.getElementById('awardsTopAssistsContainer');
+        topScorersContainer.innerHTML = '';
+        topAssistsContainer.innerHTML = '';
+
+        let redGoals = {}, yellowGoals = {}, allAssists = {}, playerStats = {};
+
+        // Collect data from database
+        for (let playerName in profiles) {
+            // Add to MOM dropdown
+            const option = document.createElement('option');
+            option.value = playerName;
+            option.innerText = playerName;
+            momSelect.appendChild(option);
+
+            if (db[yr] && db[yr][playerName]) {
+                let stats = db[yr][playerName][vM]?.[vW];
+                if (stats) {
+                    const goals = stats.gV || 0;
+                    const assists = stats.aV || 0;
+                    const playerTeam = playerName.includes('(R)') ? 'RED' : 'YELLOW';
+
+                    if (goals > 0) {
+                        if (playerTeam === 'RED') {
+                            redGoals[playerName] = goals;
+                        } else {
+                            yellowGoals[playerName] = goals;
+                        }
+                    }
+
+                    if (assists > 0) {
+                        allAssists[playerName] = assists;
+                    }
+
+                    playerStats[playerName] = { goals, assists };
+                }
+            }
+        }
+
+        // Find top scorers (all with same highest count)
+        const allGoals = [...Object.entries(redGoals), ...Object.entries(yellowGoals)];
+        const topGoalCount = Math.max(...allGoals.map(g => g[1]), 0);
+        const topScorersList = allGoals.filter(([_, count]) => count === topGoalCount && topGoalCount > 0).map(([name]) => name);
+
+        // Create checkboxes for top scorers
+        if (topScorersList.length > 0) {
+            topScorersContainer.innerHTML = topScorersList.map(name => `
+                <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-white/5 rounded-lg">
+                    <input type="checkbox" class="topScorerCheckbox" value="${name}" />
+                    <span class="text-xs text-white font-bold">${name}</span>
+                    <span class="text-[8px] text-gray-500">(${playerStats[name]?.goals || 0})</span>
+                </label>
+            `).join('');
+        } else {
+            topScorersContainer.innerHTML = '<p class="text-[9px] text-gray-500">No goals recorded</p>';
+        }
+
+        // Find top assist makers (all with same highest count)
+        const topAssistCount = Math.max(...Object.values(allAssists), 0);
+        const topAssistersList = Object.entries(allAssists)
+            .filter(([_, count]) => count === topAssistCount && topAssistCount > 0)
+            .map(([name]) => name);
+
+        // Create checkboxes for top assisters
+        if (topAssistersList.length > 0) {
+            topAssistsContainer.innerHTML = topAssistersList.map(name => `
+                <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-white/5 rounded-lg">
+                    <input type="checkbox" class="topAssistCheckbox" value="${name}" />
+                    <span class="text-xs text-white font-bold">${name}</span>
+                    <span class="text-[8px] text-gray-500">(${playerStats[name]?.assists || 0})</span>
+                </label>
+            `).join('');
+        } else {
+            topAssistsContainer.innerHTML = '<p class="text-[9px] text-gray-500">No assists recorded</p>';
+        }
+
+        // Update summary
+        updateAwardsSummary();
+    }
+
+    function updateAwardsSummary() {
+        const momValue = document.getElementById('awardsMOM').value;
+        const selectedScorers = Array.from(document.querySelectorAll('.topScorerCheckbox:checked')).map(el => el.value);
+        const selectedAssisters = Array.from(document.querySelectorAll('.topAssistCheckbox:checked')).map(el => el.value);
+
+        const summaryDiv = document.getElementById('awardsSummary');
+        summaryDiv.innerHTML = `
+            <div class="text-[9px] space-y-1">
+                <p><span class="text-yellow-400 font-bold">👑 Man of Match:</span> ${momValue || 'Not selected'}</p>
+                <p><span class="text-red-400 font-bold">⚽ Top Scorers:</span> ${selectedScorers.length > 0 ? selectedScorers.join(', ') : 'Not selected'}</p>
+                <p><span class="text-green-400 font-bold">🎯 Top Assisters:</span> ${selectedAssisters.length > 0 ? selectedAssisters.join(', ') : 'Not selected'}</p>
+            </div>
+        `;
+    }
+
+    function saveMatchAwards() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        const momValue = document.getElementById('awardsMOM').value;
+        const selectedScorers = Array.from(document.querySelectorAll('.topScorerCheckbox:checked')).map(el => el.value);
+        const selectedAssisters = Array.from(document.querySelectorAll('.topAssistCheckbox:checked')).map(el => el.value);
+
+        if (!momValue || selectedScorers.length === 0 || selectedAssisters.length === 0) {
+            return alert('Please select Man of Match, Top Scorers, and Top Assisters');
+        }
+
+        const awardsKey = `${yr}-${vM}-${vW}`;
+        const awardsRef = firebase.database().ref(`golaha_match_awards/${awardsKey}`);
+
+        awardsRef.update({
+            year: yr,
+            month: vM,
+            week: vW,
+            manOfMatch: momValue,
+            topScorers: selectedScorers,
+            topAssisters: selectedAssisters,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            alert('✅ Match Awards Saved Successfully!');
+            populateMatchSummary();
+            updateAwardsSummary();
+        }).catch(err => {
+            console.error('Error saving awards:', err);
+            alert('❌ Error saving awards');
+        });
+    }
+
+    function openAwardsEditModal() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        if (!yr || !vM || !vW) return alert('Please select Year, Month, and Week first');
+
+        // Update modal header
+        document.getElementById('editAwardsWeekDisplay').innerText = `WEEK ${vW}`;
+
+        // Populate player dropdowns
+        const selects = [
+            'editAwardsGK',
+            'editAwardsDefender',
+            'editAwardsMidfield',
+            'editAwardsBestGoal',
+            'editAwardsBestAssist'
+        ];
+
+        const mainSelHTML = document.getElementById('pNameSelect').innerHTML;
+        
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = '<option value="">-- SELECT PLAYER --</option>' + mainSelHTML;
+            }
+        });
+
+        // Set current values
+        document.getElementById('editAwardsGK').value = document.getElementById('bestGoalkeeperName').innerText || '';
+        document.getElementById('editAwardsDefender').value = document.getElementById('bestDefenderName').innerText || '';
+        document.getElementById('editAwardsMidfield').value = document.getElementById('bestMidfielderName').innerText || '';
+        document.getElementById('editAwardsBestGoal').value = document.getElementById('bestGoalName').innerText || '';
+        document.getElementById('editAwardsBestAssist').value = document.getElementById('bestAssistName').innerText || '';
+
+        // Show modal
+        const modal = document.getElementById('editAwardsModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeAwardsEditModal() {
+        const modal = document.getElementById('editAwardsModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function openEditGoalsModal() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        if (!yr || !vM || !vW) return alert('Please select Year, Month, and Week first');
+
+        document.getElementById('editGoalsWeekDisplay').innerText = `WEEK ${vW}`;
+
+        document.getElementById('guestPlayerName').value = '';
+        document.getElementById('guestPlayerGoals').value = '';
+        document.getElementById('guestPlayerTeam').value = 'RED';
+
+        const container = document.getElementById('editGoalsContainer');
+        container.innerHTML = '';
+
+        // Load only the goal scorers from the selected week
+        const scorerPlayers = Object.keys(profiles).sort().filter(playerName => {
+            const playerData = db[yr] && db[yr][playerName] && db[yr][playerName][vM] && db[yr][playerName][vM][vW];
+            return playerData && (playerData.gV || 0) > 0;
+        });
+
+        if (scorerPlayers.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-sm">No goal scorers found for the selected week. You can still add a guest player below.</p>';
+        } else {
+            scorerPlayers.forEach(playerName => {
+                const playerData = db[yr][playerName][vM][vW];
+                const currentGoals = playerData.gV || 0;
+                const currentYellow = playerData.yV || 0;
+                const currentRed = playerData.rV || 0;
+                const storedTeam = playerData.team || (playerName.includes('(R)') ? 'RED' : 'YELLOW');
+                const entryId = playerName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+
+                container.innerHTML += `
+                    <div class="goal-entry p-4 bg-black/40 rounded-lg border border-white/20" data-player-name="${playerName}">
+                        <div class="flex items-center justify-between gap-4 mb-3">
+                            <p class="text-sm font-bold text-white">${playerName}</p>
+                            <select id="team_${entryId}" class="px-3 py-2 rounded-lg bg-black/60 border border-white/20 font-bold text-white text-xs focus:outline-none">
+                                <option value="RED" ${storedTeam === 'RED' ? 'selected' : ''}>RED</option>
+                                <option value="YELLOW" ${storedTeam === 'YELLOW' ? 'selected' : ''}>YELLOW</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-gray-400 uppercase">Goals</label>
+                                <input type="number" id="goals_${entryId}" value="${currentGoals}" min="0" max="20" class="w-full p-2 rounded-lg bg-black/60 border border-white/20 font-bold text-white text-center focus:outline-none">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-yellow-400 uppercase">Yellow Cards</label>
+                                <input type="number" id="yellow_${entryId}" value="${currentYellow}" min="0" max="10" class="w-full p-2 rounded-lg bg-black/60 border border-yellow-500/30 font-bold text-yellow-500 text-center focus:outline-none">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs font-bold text-red-400 uppercase">Red Cards</label>
+                                <input type="number" id="red_${entryId}" value="${currentRed}" min="0" max="10" class="w-full p-2 rounded-lg bg-black/60 border border-red-600/30 font-bold text-red-600 text-center focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        const modal = document.getElementById('editGoalsModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function addGuestGoalEntry() {
+        const guestNameInput = document.getElementById('guestPlayerName');
+        const guestGoalsInput = document.getElementById('guestPlayerGoals');
+        const guestTeamSelect = document.getElementById('guestPlayerTeam');
+        const container = document.getElementById('editGoalsContainer');
+
+        const guestName = guestNameInput.value.trim();
+        const guestGoals = parseInt(guestGoalsInput.value) || 0;
+        const guestTeam = guestTeamSelect.value;
+
+        if (!guestName) return alert('Please enter the guest player name.');
+        if (guestGoals < 0) return alert('Please enter a valid goal count.');
+
+        const sanitizedId = guestName.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
+
+        container.insertAdjacentHTML('beforeend', `
+            <div class="goal-entry p-4 bg-black/40 rounded-lg border border-white/20" data-player-name="${guestName}">
+                <div class="flex items-center justify-between gap-4 mb-3">
+                    <p class="text-sm font-bold text-white">${guestName} <span class="text-xs text-gray-400">(Guest)</span></p>
+                    <select id="team_${sanitizedId}" class="px-3 py-2 rounded-lg bg-black/60 border border-white/20 font-bold text-white text-xs focus:outline-none">
+                        <option value="RED" ${guestTeam === 'RED' ? 'selected' : ''}>RED</option>
+                        <option value="YELLOW" ${guestTeam === 'YELLOW' ? 'selected' : ''}>YELLOW</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-gray-400 uppercase">Goals</label>
+                        <input type="number" id="goals_${sanitizedId}" value="${guestGoals}" min="0" max="20" class="w-full p-2 rounded-lg bg-black/60 border border-white/20 font-bold text-white text-center focus:outline-none">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-yellow-400 uppercase">Yellow Cards</label>
+                        <input type="number" id="yellow_${sanitizedId}" value="0" min="0" max="10" class="w-full p-2 rounded-lg bg-black/60 border border-yellow-500/30 font-bold text-yellow-500 text-center focus:outline-none">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-red-400 uppercase">Red Cards</label>
+                        <input type="number" id="red_${sanitizedId}" value="0" min="0" max="10" class="w-full p-2 rounded-lg bg-black/60 border border-red-600/30 font-bold text-red-600 text-center focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        `);
+
+        guestNameInput.value = '';
+        guestGoalsInput.value = '';
+        guestTeamSelect.value = 'RED';
+    }
+
+    function closeEditGoalsModal() {
+        const modal = document.getElementById('editGoalsModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function saveEditedGoals() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        const goalEntries = document.querySelectorAll('.goal-entry');
+        if (goalEntries.length === 0) return alert('No goal entries to save.');
+
+        let updateCount = 0;
+
+        goalEntries.forEach(entry => {
+            const goalsInput = entry.querySelector('input[id^="goals_"]');
+            const yellowInput = entry.querySelector('input[id^="yellow_"]');
+            const redInput = entry.querySelector('input[id^="red_"]');
+            const teamSelect = entry.querySelector('select[id^="team_"]');
+            const playerName = entry.dataset.playerName?.trim();
+
+            if (!playerName || !goalsInput || !teamSelect) return;
+
+            const goals = parseInt(goalsInput.value) || 0;
+            const yellow = parseInt(yellowInput?.value) || 0;
+            const red = parseInt(redInput?.value) || 0;
+            const team = teamSelect.value;
+
+            const playerRef = firebase.database().ref(`golaha_data/${yr}/${playerName}/${vM}/${vW}`);
+            playerRef.update({
+                gV: goals,
+                yV: yellow,
+                rV: red,
+                team: team,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                updateCount++;
+            }).catch(err => {
+                console.error(`Error updating ${playerName}:`, err);
+            });
+        });
+
+        setTimeout(() => {
+            alert(`✅ Goals Updated! (${updateCount} players)`);
+            closeEditGoalsModal();
+            populateMatchSummary();
+        }, 1000);
+    }
+
+    function openEditScoreModal() {
+        alert('Editing the final match result is disabled.');
+    }
+
+    function closeEditScoreModal() {
+        const modal = document.getElementById('editScoreModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function saveEditScore() {
+        const redScore = document.getElementById('editRedScore').value;
+        const yellowScore = document.getElementById('editYellowScore').value;
+
+        if (!redScore || !yellowScore) {
+            return alert('Please enter both scores');
+        }
+
+        const redScoreEl = document.getElementById('redScore');
+        const yellowScoreEl = document.getElementById('yellowScore');
+        
+        redScoreEl.innerText = String(redScore);
+        yellowScoreEl.innerText = String(yellowScore);
+
+        // Save to database
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        if (yr && vM && vW) {
+            const scoreKey = `${yr}-${vM}-${vW}`;
+            const scoreRef = firebase.database().ref(`golaha_match_score/${scoreKey}`);
+            
+            scoreRef.set({
+                year: yr,
+                month: vM,
+                week: vW,
+                redScore: parseInt(redScore),
+                yellowScore: parseInt(yellowScore),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                alert('✅ Score Updated Successfully!');
+                closeEditScoreModal();
+            }).catch(err => {
+                console.error('Error saving score:', err);
+                alert('❌ Error saving score');
+            });
+        }
+    }
+
+    function saveAllAwardsEdits() {
+        const yr = document.getElementById('viewYear').value;
+        const vM = document.getElementById('selMonth').value;
+        const vW = document.getElementById('selWeek').value;
+
+        const awards = {
+            bestGoalkeeper: document.getElementById('editAwardsGK').value,
+            bestDefender: document.getElementById('editAwardsDefender').value,
+            bestMidfield: document.getElementById('editAwardsMidfield').value,
+            bestGoal: document.getElementById('editAwardsBestGoal').value,
+            bestAssist: document.getElementById('editAwardsBestAssist').value
+        };
+
+        if (!Object.values(awards).every(v => v)) {
+            return alert('Please select all awards');
+        }
+
+        // Update display immediately
+        document.getElementById('bestGoalkeeperName').innerText = awards.bestGoalkeeper;
+        document.getElementById('bestDefenderName').innerText = awards.bestDefender;
+        document.getElementById('bestMidfielderName').innerText = awards.bestMidfield;
+        document.getElementById('bestGoalName').innerText = awards.bestGoal;
+        document.getElementById('bestAssistName').innerText = awards.bestAssist;
+
+        // Save to database
+        const awardsKey = `${yr}-${vM}-${vW}`;
+        const awardsRef = firebase.database().ref(`golaha_match_awards/${awardsKey}`);
+
+        awardsRef.update({
+            bestGoalkeeper: awards.bestGoalkeeper,
+            bestDefender: awards.bestDefender,
+            bestMidfield: awards.bestMidfield,
+            bestGoal: awards.bestGoal,
+            bestAssist: awards.bestAssist,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            alert('✅ Awards Updated Successfully!');
+            closeAwardsEditModal();
+            populateMatchSummary();
+        }).catch(err => {
+            console.error('Error saving awards:', err);
+            alert('❌ Error saving awards');
+        });
     }
 
     function renderGanaaxTable(applyFilters = false) {
@@ -2098,7 +3372,7 @@
             if (t !== 'popup' && t !== 'pay') return;
         }
 
-        const tabsList = ['data', 'reg', 'pay', 'payAn', 'gan', 'fasax', 'popup'];
+        const tabsList = ['data', 'reg', 'pay', 'payAn', 'gan', 'fasax', 'awards', 'popup'];
         
         tabsList.forEach(tab => {
             let actualFormId = tab + 'Form';
@@ -2135,6 +3409,16 @@
             document.getElementById('anYear').innerHTML = document.getElementById('viewYear').innerHTML;
             document.getElementById('anMonth').innerHTML = document.getElementById('selMonth').innerHTML;
             updatePaymentReport();
+        }
+        if(t === 'awards') {
+            populateAwardsForm();
+            // Add event listeners to checkboxes for live summary update
+            setTimeout(() => {
+                document.querySelectorAll('.topScorerCheckbox, .topAssistCheckbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateAwardsSummary);
+                });
+                document.getElementById('awardsMOM').addEventListener('change', updateAwardsSummary);
+            }, 100);
         }
     }
 
