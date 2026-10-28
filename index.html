@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700;900&family=Inter:wght@400;700;900&display=swap');
@@ -52,8 +53,178 @@
         .card-player-badge.red { background: rgba(220, 38, 38, 0.14); color: #fee2e2; border: 1px solid rgba(251, 191, 36, 0.16); }
         .card-player-badge.yellow { background: rgba(245, 158, 11, 0.14); color: #fef3c7; border: 1px solid rgba(251, 191, 36, 0.16); }
 
+        #footballMatchSummary.match-summary-shell:not(.hidden) {
+            width: 100%;
+            max-width: 1600px;
+            aspect-ratio: auto;
+            min-height: 0;
+            overflow: visible;
+            padding: clamp(16px, 2vw, 32px);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1vw, 16px);
+            background: radial-gradient(circle at 50% 0%, rgba(38, 55, 73, 0.5), transparent 48%), linear-gradient(135deg, #111827 0%, #090b10 55%, #17120a 100%);
+            border: 1px solid rgba(251, 191, 36, 0.55);
+            border-radius: 18px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        #footballMatchSummary.match-summary-shell.hidden { display: none !important; }
+        #footballMatchSummary.match-summary-shell:not(.hidden) + .grid { margin-top: 28px !important; clear: both; }
+        #footballMatchSummary .match-summary-header {
+            flex: 0 0 auto;
+            margin: 0;
+            padding-bottom: clamp(8px, 1vw, 14px);
+        }
+        #footballMatchSummary .match-summary-header h2 { font-size: clamp(0.9rem, 1.5vw, 1.35rem); }
+        #footballMatchSummary .match-summary-header [id="matchSummaryDate"] { font-size: clamp(0.55rem, 0.8vw, 0.75rem); }
+        #footballMatchSummary .match-summary-scoreboard {
+            flex: 0 0 auto;
+            min-height: 0;
+            margin: 0;
+            align-items: center;
+            gap: 12px;
+            flex-direction: row !important;
+            overflow: visible;
+        }
+        #footballMatchSummary .match-summary-scoreboard > div { min-width: 0; }
+        .mobile-team-label { display: none; }
+        #footballMatchSummary .match-summary-scoreboard h3 { font-size: clamp(0.7rem, 1vw, 1rem); }
+        #footballMatchSummary .match-summary-scoreboard [class*="w-20"] { width: clamp(42px, 5vw, 72px); height: clamp(42px, 5vw, 72px); }
+        #footballMatchSummary .match-summary-scoreboard [id$="GoalsDisplay"] { height: auto; max-height: none; min-height: 0; overflow: visible; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: minmax(42px, auto); align-items: center; gap: 5px; }
+        #footballMatchSummary .match-summary-scoreboard [id$="GoalsDisplay"] .team-player-tile { min-width: 0; min-height: 42px; padding: 5px 3px; }
+        #footballMatchSummary .match-summary-scoreboard [id$="GoalsDisplay"] .team-player-tile p:first-child { font-size: clamp(0.45rem, 0.7vw, 0.65rem); }
+        #footballMatchSummary .match-summary-scoreboard [id$="GoalsDisplay"] .team-player-tile p:last-child { font-size: 0.48rem; }
+        #footballMatchSummary .match-summary-scoreboard #redGoalsDisplay .team-total-red,
+        #footballMatchSummary .match-summary-scoreboard #yellowGoalsDisplay .team-total-yellow { grid-column: 1 / -1; margin: 0 !important; line-height: 1.2; font-size: clamp(0.55rem, 0.75vw, 0.7rem); }
+        #footballMatchSummary .match-summary-scoreboard [id$="Score"] { font-size: clamp(2.2rem, 5vw, 5rem); line-height: 0.9; }
+        #footballMatchSummary .match-summary-scoreboard .group { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+        #footballMatchSummary .match-summary-scoreboard .group > p { margin-top: 0 !important; line-height: 1.1; position: relative; z-index: 1; }
+        #footballMatchSummary .match-summary-discipline { flex: 0 0 auto; min-height: 0; margin: 4px 0 0; overflow: visible; }
+        #footballMatchSummary .match-summary-discipline .disciplinary-section-title { margin: 0 0 6px; padding-bottom: 5px; }
+        #footballMatchSummary .match-summary-discipline h3 { font-size: clamp(0.6rem, 0.85vw, 0.8rem); }
+        #footballMatchSummary .match-summary-discipline h4 { font-size: clamp(0.5rem, 0.7vw, 0.65rem); margin-bottom: 5px; padding-bottom: 4px; }
+        #footballMatchSummary .match-summary-discipline [id^="disciplinary"] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        #footballMatchSummary .match-summary-discipline .award-tile { padding: 8px; border-radius: 16px; height: 100%; max-height: 112px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; }
+        #footballMatchSummary .match-summary-discipline .card-player-photo { width: 48px; height: 48px; min-width: 48px; margin: 0 !important; border-radius: 12px; }
+        #footballMatchSummary .match-summary-discipline .card-player-name { font-size: clamp(0.58rem, 0.8vw, 0.75rem); }
+        #footballMatchSummary .match-summary-discipline .card-player-role { font-size: 0.5rem; letter-spacing: 0.1em; }
+        #footballMatchSummary .match-summary-discipline .award-tile > div:last-child { margin-top: 4px !important; padding: 4px 8px !important; }
+        #footballMatchSummary .match-summary-awards { flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column; }
+        #footballMatchSummary .match-summary-awards > h3 { margin: 0 0 8px; padding-bottom: 6px; font-size: clamp(0.6rem, 0.85vw, 0.8rem); }
+        #footballMatchSummary .match-summary-awards-grid { position: relative; flex: 0 0 auto; min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(116px, auto)); gap: 10px; overflow: visible; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile { position: relative; z-index: 0; min-width: 0; min-height: 0; padding: 7px 10px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; overflow: hidden; transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease; transform: scale(1); transform-origin: center; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile.is-expanded { position: absolute; z-index: 20; top: 45%; left: 50%; width: min(360px, 80%); min-height: 150px; max-height: min(240px, calc(100vh - 32px)); padding: 14px; gap: 5px; overflow-y: auto; transform: translate(-50%, -50%); background: #171a22; border-color: rgba(251,191,36,0.8); box-shadow: 0 16px 36px rgba(0,0,0,0.75); }
+        #footballMatchSummary .match-summary-awards-grid .award-tile.is-expanded .card-player-photo { width: 52px; height: 52px; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile.is-expanded h5 { font-size: 0.75rem; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile.is-expanded .card-player-name { font-size: 1rem; line-height: 1.2; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile.is-expanded p:last-child { font-size: 0.65rem; line-height: 1.2; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile > .bg-black\/90 { display: none; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile > .mt-3 { margin-top: 2px; }
+        #footballMatchSummary .match-summary-awards-grid .award-icon { display: none; }
+        #footballMatchSummary .match-summary-awards-grid .card-player-photo { display: flex !important; flex: 0 0 auto; width: clamp(34px, 3vw, 42px); height: clamp(34px, 3vw, 42px); min-width: 0; margin: 0 0 2px !important; border-radius: 50%; border: 1px solid rgba(251,191,36,0.55); background: rgba(0,0,0,0.35); }
+        #footballMatchSummary .match-summary-awards-grid .card-player-photo:not(.has-player-photo) { display: none !important; }
+        #footballMatchSummary .match-summary-awards-grid .card-player-photo img { display: block !important; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile h5 { position: static; width: 100%; font-size: clamp(0.58rem, 0.72vw, 0.7rem); line-height: 1.15; padding-bottom: 5px; margin: 0; background: linear-gradient(rgba(251,191,36,0.8), rgba(251,191,36,0.8)) center bottom / 60% 2px no-repeat; overflow-wrap: anywhere; }
+        #footballMatchSummary .match-summary-awards-grid .award-tile h5::after { content: none; }
+        #footballMatchSummary .match-summary-awards-grid .card-player-name { display: block; width: 100%; min-width: 0; font-size: clamp(0.68rem, 0.9vw, 0.85rem); line-height: 1.15; margin: 0; overflow-wrap: anywhere; }
+        #footballMatchSummary .match-summary-awards-grid p:last-child { max-width: 100%; font-size: clamp(0.52rem, 0.62vw, 0.62rem); line-height: 1.15; margin: 0; overflow-wrap: anywhere; }
+        #footballMatchSummary.is-capturing-screenshot .match-summary-control,
+        #footballMatchSummary.is-capturing-screenshot .team-color-control,
+        #footballMatchSummary.is-capturing-screenshot .match-summary-final-score { display: none !important; }
+        #footballMatchSummary .team-player-photo,
+        #footballMatchSummary .team-player-tile { position: relative; overflow: hidden; }
+        #footballMatchSummary > img,
+        #footballMatchSummary .match-summary-scoreboard img,
+        #footballMatchSummary .match-summary-discipline img { display: none !important; }
+        #footballMatchSummary { --team-red-color: #ef4444; --team-yellow-color: #facc15; }
+        #footballMatchSummary .team-red:not(.award-tile):not(.disciplinary-card-tile) { border-color: color-mix(in srgb, var(--team-red-color) 90%, transparent) !important; background: linear-gradient(145deg, color-mix(in srgb, var(--team-red-color) 42%, transparent), rgba(12, 15, 22, 0.95)) !important; }
+        #footballMatchSummary .team-yellow:not(.award-tile):not(.disciplinary-card-tile) { border-color: color-mix(in srgb, var(--team-yellow-color) 90%, transparent) !important; background: linear-gradient(145deg, color-mix(in srgb, var(--team-yellow-color) 42%, transparent), rgba(12, 15, 22, 0.95)) !important; }
+        #footballMatchSummary .team-red:not(.award-tile):not(.disciplinary-card-tile)::before,
+        #footballMatchSummary .team-yellow:not(.award-tile):not(.disciplinary-card-tile)::before { content: ''; position: absolute; inset: 0 0 auto; height: 4px; z-index: 2; }
+        #footballMatchSummary .team-red:not(.award-tile):not(.disciplinary-card-tile)::before { background: var(--team-red-color); }
+        #footballMatchSummary .team-yellow:not(.award-tile):not(.disciplinary-card-tile)::before { background: var(--team-yellow-color); }
+        #footballMatchSummary .team-color-red { border-color: var(--team-red-color); background: color-mix(in srgb, var(--team-red-color) 20%, transparent); }
+        #footballMatchSummary .team-color-yellow { border-color: var(--team-yellow-color); background: color-mix(in srgb, var(--team-yellow-color) 20%, transparent); }
+        #footballMatchSummary .team-color-red span { color: var(--team-red-color); }
+        #footballMatchSummary .team-color-yellow span { color: var(--team-yellow-color); }
+        #footballMatchSummary .team-goal-count-red,
+        #footballMatchSummary .team-total-red,
+        #footballMatchSummary .mobile-team-label.red-label { color: var(--team-red-color); }
+        #footballMatchSummary .team-goal-count-yellow,
+        #footballMatchSummary .team-total-yellow,
+        #footballMatchSummary .mobile-team-label.yellow-label { color: var(--team-yellow-color); }
+        #footballMatchSummary .team-color-control { display: none; align-items: center; gap: 8px; color: #9ca3af; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+        #footballMatchSummary .team-color-control select { padding: 5px 7px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: #111827; cursor: pointer; }
+        .goal-team-select { --goal-team-color: var(--match-team-red-color, #ef4444); color: var(--goal-team-color) !important; }
+        .goal-team-select[data-team="YELLOW"] { --goal-team-color: var(--match-team-yellow-color, #facc15); }
+        .goal-team-select option.goal-team-red { color: var(--match-team-red-color, #ef4444) !important; }
+        .goal-team-select option.goal-team-yellow { color: var(--match-team-yellow-color, #facc15) !important; }
+        @media (max-width: 1200px) {
+            #footballMatchSummary.match-summary-shell { display: block !important; aspect-ratio: auto; height: auto; min-height: 0; overflow: visible; border-radius: 12px; position: relative; z-index: 1; }
+            #footballMatchSummary .match-summary-header { display: flex !important; }
+            #footballMatchSummary .match-summary-scoreboard { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(80px, auto) minmax(0, 1fr); flex: none; min-height: 0; margin-bottom: 24px !important; overflow: visible; }
+            #footballMatchSummary .match-summary-scoreboard > div { width: auto; min-width: 0; }
+            #footballMatchSummary .match-summary-scoreboard > div:first-child,
+            #footballMatchSummary .match-summary-scoreboard > div:last-child { padding: 10px 6px; border-radius: 18px; background: rgba(2, 6, 23, 0.42); }
+            #footballMatchSummary .mobile-team-label { display: block; margin: 4px 0 6px; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+            #footballMatchSummary .mobile-team-label.red-label { color: var(--team-red-color); }
+            #footballMatchSummary .mobile-team-label.yellow-label { color: var(--team-yellow-color); }
+            #footballMatchSummary .match-summary-scoreboard [id$="GoalsDisplay"] { height: auto; max-height: none; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(42px, auto); overflow: visible; }
+            #footballMatchSummary .match-summary-discipline { display: block !important; flex: none; margin-bottom: 24px; overflow: visible; }
+            #footballMatchSummary .match-summary-awards { display: block !important; flex: none; }
+            #footballMatchSummary.match-summary-shell:not(.hidden) + .grid { margin-top: 48px !important; position: relative; z-index: 2; clear: both; }
+        }
+        @media (max-width: 640px) {
+            .single-awards-strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 138px; justify-content: start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+            .single-award-strip-item { min-width: 138px; padding: 8px 6px; overflow: hidden; }
+            .single-award-strip-label { display: block; min-height: 2.2em; line-height: 1.1; }
+            .single-award-strip-name { min-height: 2.2em; overflow-wrap: anywhere; }
+            #footballMatchSummary.match-summary-shell { aspect-ratio: auto; min-height: 0; height: auto; overflow: visible; padding: 14px; gap: 16px; }
+            #footballMatchSummary .match-summary-header { flex-direction: column; align-items: stretch; gap: 10px; }
+            #footballMatchSummary .match-summary-header h2 { max-width: none; line-height: 1.25; }
+            #footballMatchSummary .match-summary-header > div { min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+            #footballMatchSummary .match-summary-header [id="matchSummaryDate"] { white-space: normal; display: flex; align-items: center; justify-content: center; text-align: center; }
+            #footballMatchSummary .match-summary-header button { min-width: 0; padding: 8px 6px; font-size: 0.55rem; line-height: 1.1; white-space: normal; }
+            #footballMatchSummary .team-color-control { flex-direction: column; gap: 4px; text-align: center; }
+            #footballMatchSummary .match-summary-scoreboard { flex: 0 0 auto; display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(72px, auto) minmax(0, 1fr); align-items: center; overflow: visible; gap: 8px; }
+            #footballMatchSummary .match-summary-scoreboard > div { width: auto; min-width: 0; flex: 0 0 auto; }
+            #footballMatchSummary .match-summary-scoreboard [id$="GoalsDisplay"] { height: auto; max-height: none; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(42px, auto); overflow: visible; gap: 4px; }
+            #footballMatchSummary .match-summary-discipline { flex: 0 0 auto; margin-top: 0; overflow: visible; }
+            #footballMatchSummary .match-summary-discipline [id^="disciplinary"] { grid-template-columns: 1fr; }
+            #footballMatchSummary .match-summary-awards { flex: 0 0 auto; }
+            #footballMatchSummary .match-summary-awards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(116px, auto); overflow: visible; }
+            #footballMatchSummary .match-summary-awards-grid .award-tile { min-height: 116px; }
+        }
+        @media (max-width: 1200px) {
+            #footballMatchSummary.match-summary-shell:not(.hidden) { aspect-ratio: auto !important; height: auto !important; min-height: 0 !important; }
+            .single-awards-strip { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: 160px; justify-content: start; overflow-x: auto; }
+            .single-award-strip-item { min-width: 160px; padding-left: 10px; padding-right: 10px; }
+            .single-award-strip-label { white-space: normal; overflow-wrap: anywhere; }
+            .single-award-strip-name { white-space: normal; overflow-wrap: anywhere; }
+        }
+
         #reportModal, #voteListModal, #largeViewModal, #lockoutModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); padding: 20px; align-items: center; justify-content: center; }
         .report-content { background: #0f172a; border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 32px; max-width: 500px; width: 100%; padding: 32px; position: relative; }
+        #reportModal .report-content { max-width: 900px; max-height: 90vh; overflow-y: auto; }
+        .report-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+        .report-chart-card { min-width: 0; height: 210px; padding: 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; background: rgba(0,0,0,0.2); }
+        .report-chart-card h4 { margin: 0 0 8px; color: #fbbf24; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
+        .single-awards-strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; padding: 10px; border: 1px solid rgba(34, 197, 94, 0.24); border-radius: 18px; background: rgba(15, 61, 58, 0.45); overflow-x: auto; }
+        .single-award-strip-item { min-width: 120px; text-align: center; padding: 8px 6px; border-right: 1px solid rgba(255,255,255,0.1); }
+        .single-award-strip-item:last-child { border-right: none; }
+        .single-award-strip-icon { display: block; font-size: 1.25rem; line-height: 1; margin-bottom: 4px; }
+        .single-award-strip-label { color: #86efac; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
+        .single-award-strip-photo { width: 42px; height: 42px; margin: 5px auto 2px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(134, 239, 172, 0.7); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .single-award-strip-name { color: #f8fafc; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; line-height: 1.1; margin-top: 4px; }
+        #myAwardsModal { display: none; position: fixed; inset: 0; z-index: 220; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); padding: 20px; align-items: center; justify-content: center; }
+        @media (max-width: 640px) {
+            .report-chart-grid { grid-template-columns: 1fr; }
+            .report-chart-card { height: 190px; }
+        }
+        @media (max-width: 640px) {
+            #footballMatchSummary .match-summary-awards-grid { row-gap: 12px; }
+            #footballMatchSummary .match-summary-awards-grid .award-tile.is-expanded { width: min(300px, calc(100vw - 40px)); }
+        }
 
         .chat-scroll::-webkit-scrollbar { width: 6px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.3); border-radius: 10px; }
@@ -166,12 +337,11 @@
     <header class="mb-8 flex flex-col lg:flex-row justify-between items-center gap-8">
         <h1 class="text-6xl font-black oswald text-white tracking-tighter">GOLAHA <span class="text-yellow-500">LABA GOLE</span></h1>
         <div class="glass-panel p-2 flex flex-wrap gap-2 justify-center shadow-2xl items-center">
-            <select id="viewYear" onchange="render()" class="tab-btn bg-transparent border-none font-bold text-yellow-500"></select>
+            <select id="viewYear" onchange="updateAvailableWeeks(); render()" class="tab-btn bg-transparent border-none font-bold text-yellow-500"></select>
             <button onclick="changeFilter('YEAR')" id="f-YEAR" class="tab-btn tab-active">🏆 SEASON</button>
-            <select id="selMonth" onchange="changeFilter('MONTH')" class="tab-btn bg-transparent border-none"></select>
+            <select id="selMonth" onchange="updateAvailableWeeks(); changeFilter('MONTH')" class="tab-btn bg-transparent border-none"></select>
             <select id="selWeek" onchange="changeFilter('WEEK')" class="tab-btn bg-transparent border-none">
                 <option value="">-- WEEK --</option>
-                <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
             </select>
             
             <button id="publicReportBtn" onclick="showLargeView()" class="hidden tab-btn bg-blue-600 text-white border-none hover:bg-blue-500 flex items-center gap-2">
@@ -180,6 +350,10 @@
             
             <button id="matchSummaryToggleBtn" onclick="toggleMatchSummary()" class="tab-btn bg-yellow-500 text-black border-none hover:bg-yellow-400 flex items-center gap-2">
                 📝 MATCH SUMMARY
+            </button>
+
+            <button id="myAwardsTopBtn" onclick="showMyAwards()" class="tab-btn bg-green-600 text-white border-none hover:bg-green-500 flex items-center gap-2">
+                🏅 MY AWARDS
             </button>
             
             <button onclick="toggleTheme()" id="themeToggleBtn" class="tab-btn bg-transparent border border-white/20 hover:bg-white/10 text-xl transition flex items-center justify-center" title="Toggle Light/Dark Mode">
@@ -249,15 +423,29 @@
         </div>
     </div>
 
+    <div id="singleAwardsStrip" class="single-awards-strip mb-6">
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('manOfMatch', 'MVP WINS')"><span class="single-award-strip-icon">🏆</span><span class="single-award-strip-label">MVP WINS</span><img id="stripMvpPhoto" class="single-award-strip-photo hidden" alt="MVP winner"><p id="stripMvp" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('topScorers', 'TOP SCORER')"><span class="single-award-strip-icon">⚽</span><span class="single-award-strip-label">Top Scorer</span><img id="stripTopScorerPhoto" class="single-award-strip-photo hidden" alt="Top scorer"><p id="stripTopScorer" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('topAssisters', 'TOP ASSISTER')"><span class="single-award-strip-icon">🤝</span><span class="single-award-strip-label">Top Assister</span><img id="stripTopAssisterPhoto" class="single-award-strip-photo hidden" alt="Top assister"><p id="stripTopAssister" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('bestGoal', 'BEST GOAL')"><span class="single-award-strip-icon">🎯</span><span class="single-award-strip-label">Best Goal</span><img id="stripBestGoalPhoto" class="single-award-strip-photo hidden" alt="Best goal winner"><p id="stripBestGoal" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('bestMidfield', 'BEST MIDFIELDER')"><span class="single-award-strip-icon">🧠</span><span class="single-award-strip-label">Best Midfielder</span><img id="stripBestMidfielderPhoto" class="single-award-strip-photo hidden" alt="Best midfielder"><p id="stripBestMidfielder" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('bestDefender', 'BEST DEFENDER')"><span class="single-award-strip-icon">🛡️</span><span class="single-award-strip-label">Best Defender</span><img id="stripBestDefenderPhoto" class="single-award-strip-photo hidden" alt="Best defender"><p id="stripBestDefender" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('bestAssist', 'BEST ASSIST')"><span class="single-award-strip-icon">✨</span><span class="single-award-strip-label">Best Assist</span><img id="stripBestAssistPhoto" class="single-award-strip-photo hidden" alt="Best assist"><p id="stripBestAssist" class="single-award-strip-name">---</p></div>
+        <div class="single-award-strip-item cursor-pointer" onclick="showAwardRanking('bestGoalkeeper', 'BEST GOALKEEPER')"><span class="single-award-strip-icon">🧤</span><span class="single-award-strip-label">Best Goalkeeper</span><img id="stripBestGoalkeeperPhoto" class="single-award-strip-photo hidden" alt="Best goalkeeper"><p id="stripBestGoalkeeper" class="single-award-strip-name">---</p></div>
+    </div>
+
     <!-- FOOTBALL MATCH SUMMARY FORM -->
-    <div id="footballMatchSummary" class="glass-panel p-8 border border-yellow-500/20 mb-16 hidden">
+    <div id="footballMatchSummary" class="glass-panel p-8 border border-yellow-500/20 mb-16 match-summary-shell">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-8 pb-4 border-b border-yellow-500/30">
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-yellow-500/30 match-summary-header">
             <h2 class="text-xl font-black oswald text-white uppercase tracking-wider">FOOTBALL MATCH SUMMARY</h2>
             <div class="flex items-center gap-3">
                 <div class="text-sm font-bold text-gray-400 uppercase tracking-widest">
                     <span id="matchSummaryDate">---------</span>
                 </div>
+                <button id="myPerformanceBtn" onclick="showMyPerformance()" class="match-summary-control px-4 py-3 rounded-xl bg-blue-600 text-white font-black text-xs uppercase tracking-wider hover:bg-blue-500 transition shadow-lg">
+                    📈 MY PERFORMANCE
+                </button>
                 <button id="matchSummaryScreenshotBtn" onclick="takeMatchSummaryScreenshot()" class="match-summary-control px-5 py-3 rounded-xl bg-yellow-500 text-black font-black text-xs uppercase tracking-wider hover:bg-yellow-400 transition shadow-lg">
                     📸 SCREENSHOT
                 </button>
@@ -265,13 +453,15 @@
         </div>
 
         <!-- Match Score Section -->
-        <div class="flex flex-col xl:flex-row items-start justify-between gap-4 mb-12">
+        <div class="flex flex-col xl:flex-row items-start justify-between gap-4 mb-12 match-summary-scoreboard">
             <!-- Red Team -->
             <div class="flex flex-col items-center gap-3 flex-1">
-                <div class="w-20 h-20 rounded-full border-4 border-red-600 bg-red-900/30 flex items-center justify-center">
-                    <span class="text-2xl font-black text-red-400">🛡️</span>
-                </div>
-                <h3 class="text-lg font-black text-white uppercase tracking-wide">RED</h3>
+                <div id="redTeamBadge" class="team-color-red w-20 h-20 rounded-full border-4 flex items-center justify-center" role="img" aria-label="Red team color badge"></div>
+                <h3 id="redTeamName" class="text-lg font-black text-white uppercase tracking-wide">RED</h3>
+                <label id="redTeamColorControl" class="team-color-control">TEAM COLOR <select id="redTeamColorPicker" aria-label="Choose red team's color" onchange="updateMatchTeamColor('RED', this.value)">
+                    <option value="#22c55e">GREEN</option><option value="#f8fafc">WHITE</option><option value="#ef4444" selected>RED</option><option value="#facc15">YELLOW</option><option value="#3b82f6">BLUE</option><option value="#a855f7">PURPLE</option>
+                </select></label>
+                <span class="mobile-team-label red-label">RED TEAM PLAYERS</span>
                 
                 <!-- Red Team Goals -->
                 <div id="redGoalsDisplay" class="w-full flex flex-wrap justify-center gap-3">
@@ -285,7 +475,7 @@
                     <div class="text-6xl font-black text-white tracking-tighter font-mono transition">
                         <span id="redScore">--</span><span class="text-yellow-500">:</span><span id="yellowScore">--</span>
                     </div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">FINAL SCORE</p>
+                    <p class="match-summary-final-score text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">FINAL SCORE</p>
                 </div>
                 <div class="flex justify-center match-summary-control">
                     <button onclick="openEditGoalsModal()" class="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg uppercase transition admin-only mx-auto">EDIT GOALS</button>
@@ -294,10 +484,12 @@
 
             <!-- Yellow Team -->
             <div class="flex flex-col items-center gap-3 flex-1">
-                <div class="w-20 h-20 rounded-full border-4 border-yellow-400 bg-yellow-900/30 flex items-center justify-center">
-                    <span class="text-2xl font-black text-yellow-300">🏵️</span>
-                </div>
-                <h3 class="text-lg font-black text-white uppercase tracking-wide">YELLOW</h3>
+                <div id="yellowTeamBadge" class="team-color-yellow w-20 h-20 rounded-full border-4 flex items-center justify-center" role="img" aria-label="Yellow team color badge"></div>
+                <h3 id="yellowTeamName" class="text-lg font-black text-white uppercase tracking-wide">YELLOW</h3>
+                <label id="yellowTeamColorControl" class="team-color-control">TEAM COLOR <select id="yellowTeamColorPicker" aria-label="Choose yellow team's color" onchange="updateMatchTeamColor('YELLOW', this.value)">
+                    <option value="#22c55e">GREEN</option><option value="#f8fafc">WHITE</option><option value="#ef4444">RED</option><option value="#facc15" selected>YELLOW</option><option value="#3b82f6">BLUE</option><option value="#a855f7">PURPLE</option>
+                </select></label>
+                <span class="mobile-team-label yellow-label">YELLOW TEAM PLAYERS</span>
                 
                 <!-- Yellow Team Goals -->
                 <div id="yellowGoalsDisplay" class="w-full flex flex-wrap justify-center gap-3">
@@ -307,7 +499,7 @@
         </div>
 
         <!-- Disciplinary Record -->
-        <div class="mt-6">
+        <div class="mt-6 match-summary-discipline">
             <div class="disciplinary-section-title">
                 <h3 class="text-sm font-black text-yellow-500 uppercase tracking-widest">DISCIPLINARY RECORD</h3>
             </div>
@@ -324,12 +516,12 @@
         </div>
 
         <!-- Single Awards Section -->
-        <div>
-            <br><br><h3 class="text-sm font-black text-yellow-500 uppercase tracking-widest mb-8 pb-4 border-b border-white/10">SINGLE AWARDS</h3></br></br>
+        <div class="match-summary-awards">
+            <h3 class="text-sm font-black text-yellow-500 uppercase tracking-widest mb-8 pb-4 border-b border-white/10">SINGLE AWARDS</h3>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 match-summary-awards-grid" onclick="closeExpandedAwardTile(event)">
                 <!-- Man of the Match -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="manOfMatchImg" src="" alt="Man of Match" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -339,7 +531,7 @@
                 </div>
 
                 <!-- Top Scorers -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="topScorer1Img" src="" alt="Top Scorer" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -349,7 +541,7 @@
                 </div>
 
                 <!-- Best Goal -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="bestGoalImg" src="" alt="Best Goal" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -359,7 +551,7 @@
                 </div>
 
                 <!-- Best Midfielder -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="bestMidfielderImg" src="" alt="Best Midfielder" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -369,7 +561,7 @@
                 </div>
 
                 <!-- Best Defender -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="bestDefenderImg" src="" alt="Best Defender" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -379,7 +571,7 @@
                 </div>
 
                 <!-- Best Assist -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="bestAssistImg" src="" alt="Best Assist" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -389,7 +581,7 @@
                 </div>
 
                 <!-- Top Assist -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="topAssistImg" src="" alt="Top Assist" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -399,7 +591,7 @@
                 </div>
 
                 <!-- Best Goalkeeper -->
-                <div class="award-tile text-center">
+                <div class="award-tile text-center" tabindex="0" role="button" aria-expanded="false" onclick="toggleAwardTile(this)" onkeydown="handleAwardTileKeydown(event, this)">
                     <div class="card-player-photo mx-auto mb-3 rounded-lg overflow-hidden">
                         <img id="bestGoalkeeperImg" src="" alt="Best Goalkeeper" class="w-full h-full object-cover" style="display:none;">
                     </div>
@@ -624,6 +816,7 @@
                         <label class="text-[10px] uppercase text-gray-400 font-bold ml-1">Xaaladda Fasaxa</label>
                         <select id="fasaxStatusSelect" class="w-full mt-1 p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white focus:outline-none">
                             <option value="fasax">Fasax (Leave)</option>
+                            <option value="fasax dheer">Fasax Dheer (Long Leave)</option>
                             <option value="kasoo noqo">Kasoo Noqo (Return)</option>
                         </select>
                     </div>
@@ -715,8 +908,8 @@
                 <div id="statsForm" class="space-y-4">
                     <select id="pNameSelect" class="w-full p-4 rounded-xl bg-black/40 border border-white/10 font-bold text-white"></select>
                     <div class="grid grid-cols-2 gap-2">
-                        <select id="inMonth" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
-                        <select id="inWeek" class="p-3 rounded-xl bg-black/40 text-xs text-white"><option value="1">W1</option><option value="2">W2</option><option value="3">W3</option><option value="4">W4</option></select>
+                        <select id="inMonth" onchange="updateAvailableWeeks()" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
+                        <select id="inWeek" class="p-3 rounded-xl bg-black/40 text-xs text-white"></select>
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <input type="number" id="s1" onchange="validateSkill('s1')" placeholder="Time" class="p-3 rounded-xl bg-black/40 text-center text-[10px] text-white">
@@ -766,7 +959,7 @@
                             <th class="p-4 text-left">Athlete</th>
                             <th class="text-center">Skill Rating</th>
                             <th class="text-blue-500">MP</th> 
-                            <th class="hidden text-red-500">G</th>
+                            <th class="text-red-500">Goals</th>
                             <th class="hidden text-green-500">A</th>
                             <th class="hidden text-indigo-500">Defense</th>
                             <th class="hidden admin-only text-yellow-500">Y</th>
@@ -956,9 +1149,9 @@
                 <h3 class="text-sm font-black text-yellow-400 uppercase mb-3">Add Guest / Invited Player</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <input type="text" id="guestPlayerName" placeholder="Guest Player Name" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-bold" />
-                    <select id="guestPlayerTeam" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-bold">
-                        <option value="RED">RED</option>
-                        <option value="YELLOW">YELLOW</option>
+                    <select id="guestPlayerTeam" class="goal-team-select w-full p-3 rounded-xl bg-black/40 border border-white/10 text-xs font-bold" onchange="updateGoalTeamSelectColor(this)">
+                        <option value="RED" class="goal-team-red">RED</option>
+                        <option value="YELLOW" class="goal-team-yellow">YELLOW</option>
                     </select>
                     <input type="number" id="guestPlayerGoals" placeholder="Goals" min="0" max="20" class="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white text-center text-xs font-bold" />
                 </div>
@@ -971,7 +1164,7 @@
             <button type="button" onclick="closeEditGoalsModal()" class="flex-1 py-4 rounded-xl bg-gray-600 text-white font-black oswald uppercase hover:bg-gray-500 transition tracking-wider">
                 ✕ CANCEL
             </button>
-            <button type="button" onclick="saveEditedGoals()" class="flex-1 py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
+            <button id="saveEditedGoalsBtn" type="button" onclick="saveEditedGoals()" class="flex-1 py-4 rounded-xl bg-yellow-500 text-black font-black oswald uppercase hover:bg-yellow-400 transition tracking-wider">
                 💾 SAVE GOALS
             </button>
         </div>
@@ -1075,6 +1268,17 @@
                 <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">REF</p><p id="repS6" class="font-bold text-white">-</p></div>
                 <div class="bg-black/30 p-2 rounded-lg border border-white/5"><p class="text-gray-500">DEF</p><p id="repS7" class="font-bold text-white">-</p></div>
             </div>
+
+            <div class="report-chart-grid">
+                <div class="report-chart-card">
+                    <h4>Points History</h4>
+                    <canvas id="repPointsChart"></canvas>
+                </div>
+                <div class="report-chart-card">
+                    <h4>Goals & Assists</h4>
+                    <canvas id="repContributionsChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1084,6 +1288,16 @@
         <button onclick="closeVoteList(null)" class="absolute top-4 right-6 text-gray-400 text-2xl font-bold">&times;</button>
         <h3 id="voteListTitle" class="text-xl font-black oswald text-yellow-500 uppercase tracking-wide mb-4 text-center">Voters List</h3>
         <div id="voteListItems" class="max-h-[350px] overflow-y-auto chat-scroll pr-1 space-y-2"></div>
+    </div>
+</div>
+
+<div id="myAwardsModal" onclick="closeMyAwards(event)">
+    <div class="bg-[#0f172a] border border-green-500/30 rounded-3xl w-full max-w-md p-6 shadow-2xl relative" onclick="event.stopPropagation()">
+        <button onclick="closeMyAwards(null)" class="absolute top-4 right-5 text-2xl text-gray-400 hover:text-white">&times;</button>
+        <h2 id="myAwardsModalTitle" class="text-2xl font-black oswald text-green-400 uppercase text-center">MY AWARDS</h2>
+        <p id="myAwardsPeriod" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center mt-2"></p>
+        <div id="myAwardsRankingHeader" class="hidden grid grid-cols-[1fr_2fr_1fr] gap-3 mt-5 px-4 text-[10px] font-black uppercase tracking-widest text-green-300"><span>Rank</span><span>Player</span><span class="text-right">Wins</span></div>
+        <div id="myAwardsList" class="mt-3 max-h-[65vh] overflow-y-auto pr-1 space-y-2"></div>
     </div>
 </div>
 
@@ -1262,9 +1476,7 @@
             Object.keys(profiles).forEach(name => {
                 if (name === "FULL CASHIER") return; 
                 
-                const fData = fasaxData[name];
-                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
-                if (isFasax) return;
+                if (isPlayerOnLeave(name)) return;
                 
                 if (!votes[name]) {
                     listHTML += `<tr><td style="border: 1px solid #cbd5e1; padding: 10px;">${name}</td><td style="border: 1px solid #cbd5e1; padding: 10px; text-align: right; color: gray;">--:--</td></tr>`;
@@ -1277,9 +1489,7 @@
             for (let name in votes) {
                 if (name === "FULL CASHIER") continue; 
                 
-                const fData = fasaxData[name];
-                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
-                if (isFasax) continue;
+                if (isPlayerOnLeave(name)) continue;
                 
                 const voteData = typeof votes[name] === 'object' ? votes[name] : { status: votes[name], timestamp: null };
                 
@@ -1357,11 +1567,128 @@
     let paymentData = {};
     let ganaaxData = {}; 
     let fasaxData = {};
+    function getFasaxStatus(playerName) {
+        const record = fasaxData[playerName];
+        const status = record && typeof record === 'object' ? record.status : record;
+        return typeof status === 'string' ? status.trim().toLowerCase() : '';
+    }
+
+    function isPlayerOnLeave(playerName) {
+        return ['fasax', 'fasax dheer'].includes(getFasaxStatus(playerName));
+    }
+
+    function isPlayerOnLongLeave(playerName) {
+        return getFasaxStatus(playerName) === 'fasax dheer';
+    }
+
+    function getMonthlyPaymentPlayerNames() {
+        return Object.keys(profiles)
+            .filter(name => name !== 'FULL CASHIER' && !isPlayerOnLongLeave(name))
+            .sort();
+    }
+
     let chatIsOpen = false;
     let unreadCount = 0;
     let lastSeenMsgTimestamp = parseInt(localStorage.getItem('lastSeenMsg')) || 0;
     let globalPaymentDataRaw = {};
     let currentCalculatedStats = {}; // Tracks stats globally for the modal
+    let playerPointsChart = null;
+    let playerContributionsChart = null;
+    const MATCH_TEAM_COLOR_NAMES = {
+        '#22c55e': 'GREEN',
+        '#f8fafc': 'WHITE',
+        '#ef4444': 'RED',
+        '#facc15': 'YELLOW',
+        '#3b82f6': 'BLUE',
+        '#a855f7': 'PURPLE'
+    };
+    const DEFAULT_MATCH_TEAM_COLORS = { RED: '#ef4444', YELLOW: '#facc15' };
+    let activeMatchTeamColors = { ...DEFAULT_MATCH_TEAM_COLORS };
+    let activeMatchColorKey = '';
+    let activeMatchTeamColorsRef = null;
+
+    function applyMatchTeamColors(colors = {}) {
+        const summary = document.getElementById('footballMatchSummary');
+        if (!summary) return;
+
+        ['RED', 'YELLOW'].forEach(team => {
+            const requestedColor = (colors[team] || '').toLowerCase();
+            const color = Object.prototype.hasOwnProperty.call(MATCH_TEAM_COLOR_NAMES, requestedColor)
+                ? requestedColor
+                : DEFAULT_MATCH_TEAM_COLORS[team];
+            activeMatchTeamColors[team] = color;
+            summary.style.setProperty(`--team-${team.toLowerCase()}-color`, color);
+            document.documentElement.style.setProperty(`--match-team-${team.toLowerCase()}-color`, color);
+            const picker = document.getElementById(`${team.toLowerCase()}TeamColorPicker`);
+            if (picker) picker.value = color;
+            const teamName = MATCH_TEAM_COLOR_NAMES[color];
+            const teamNameEl = document.getElementById(`${team.toLowerCase()}TeamName`);
+            if (teamNameEl) teamNameEl.innerText = teamName;
+            const mobileTeamLabel = summary.querySelector(`.mobile-team-label.${team.toLowerCase()}-label`);
+            if (mobileTeamLabel) mobileTeamLabel.innerText = `${teamName} TEAM PLAYERS`;
+        });
+        document.querySelectorAll('.goal-team-select').forEach(updateGoalTeamSelectColor);
+    }
+
+    function updateGoalTeamSelectColor(select) {
+        if (!select) return;
+        const team = select.value === 'YELLOW' ? 'YELLOW' : 'RED';
+        const selectedColor = activeMatchTeamColors[team];
+        select.dataset.team = team;
+        select.style.setProperty('color', selectedColor, 'important');
+        select.style.borderColor = selectedColor;
+        select.querySelectorAll('option').forEach(option => {
+            const optionTeam = option.value === 'YELLOW' ? 'YELLOW' : 'RED';
+            const optionColor = activeMatchTeamColors[optionTeam];
+            option.textContent = MATCH_TEAM_COLOR_NAMES[optionColor];
+            option.style.setProperty('color', optionColor, 'important');
+        });
+    }
+
+    function loadMatchTeamColors(scoreKey) {
+        if (activeMatchColorKey === scoreKey) return;
+        activeMatchColorKey = scoreKey;
+        activeMatchTeamColors = { ...DEFAULT_MATCH_TEAM_COLORS };
+        applyMatchTeamColors(activeMatchTeamColors);
+
+        if (activeMatchTeamColorsRef) activeMatchTeamColorsRef.off('value');
+        activeMatchTeamColorsRef = firebase.database().ref(`golaha_match_summary/${scoreKey}/teamColors`);
+        activeMatchTeamColorsRef.on('value', snapshot => {
+            if (activeMatchColorKey === scoreKey) applyMatchTeamColors(snapshot.val() || {});
+        }, error => {
+            console.error('Error loading match team colors:', error);
+        });
+    }
+
+    function updateMatchTeamColor(team, color) {
+        if (!isUserAdmin) {
+            alert('Only an administrator can change team colors.');
+            applyMatchTeamColors(activeMatchTeamColors);
+            return;
+        }
+        if (!['RED', 'YELLOW'].includes(team) || !Object.prototype.hasOwnProperty.call(MATCH_TEAM_COLOR_NAMES, (color || '').toLowerCase())) {
+            alert('Please choose a valid team color.');
+            applyMatchTeamColors(activeMatchTeamColors);
+            return;
+        }
+        if (!activeMatchColorKey) {
+            alert('The match week is not ready yet. Please try again.');
+            applyMatchTeamColors(activeMatchTeamColors);
+            return;
+        }
+
+        color = color.toLowerCase();
+        const previousColor = activeMatchTeamColors[team];
+        applyMatchTeamColors({ ...activeMatchTeamColors, [team]: color });
+        firebase.database().ref(`golaha_match_summary/${activeMatchColorKey}/teamColors/${team}`).set(color)
+            .catch(error => {
+                console.error(`Error saving ${team.toLowerCase()} team color:`, error);
+                if (activeMatchTeamColors[team] === color) {
+                    applyMatchTeamColors({ ...activeMatchTeamColors, [team]: previousColor });
+                }
+                alert('Could not save the team color. Please try again.');
+            });
+    }
 
     // --- THEME TOGGLE LOGIC ---
     function toggleTheme() {
@@ -1468,6 +1795,9 @@
             isUserAdmin = admins.includes(user.email.toLowerCase());
             isFinanceUser = financeUsers.includes(user.email.toLowerCase());
             const isLimitedAdmin = limitedAdmins.includes(user.email.toLowerCase());
+            document.querySelectorAll('.team-color-control').forEach(control => {
+                control.style.display = isUserAdmin ? 'flex' : 'none';
+            });
 
             // Toggles Print Preview in Poll based on auth role
             const printControls = document.getElementById('attendancePrintControls');
@@ -1558,8 +1888,11 @@
 
             fasaxRef.on('value', s => {
                 fasaxData = s.val() || {};
+                updatePaymentPlayerDropdown();
+                updatePaymentReport();
                 updateAttendancePollUI();
                 renderFasaxTable();
+                handleLockoutCheck();
             });
 
             settingsRef.on('value', s => {
@@ -1654,6 +1987,10 @@
             });
 
         } else {
+            isUserAdmin = false;
+            document.querySelectorAll('.team-color-control').forEach(control => {
+                control.style.display = 'none';
+            });
             loginScreen.style.display = 'flex';
             dashboardArea.classList.add('hidden');
             chatSystemWidget.classList.add('hidden');
@@ -1671,6 +2008,13 @@
         const financeUsers = ["cashier@golaha.com"];
         if (admins.includes(user.email.toLowerCase()) || financeUsers.includes(user.email.toLowerCase())) {
             document.getElementById('lockoutModal').style.display = 'none';
+            return;
+        }
+
+        if (isPlayerOnLongLeave(currentUserProfileUsername)) {
+            document.getElementById('lockoutModal').style.display = 'none';
+            document.getElementById('dashboardArea').classList.remove('hidden');
+            document.getElementById('chatSystemWidget').classList.remove('hidden');
             return;
         }
 
@@ -1720,6 +2064,10 @@
     }
 
     function submitPaymentApprovalRequest() {
+        if (isPlayerOnLongLeave(currentUserProfileUsername)) {
+            alert("Fasax Dheer awgiis lacag-bixin looma baahna.");
+            return;
+        }
         const today = new Date();
         const currentMonthKey = `${today.getFullYear()}-${today.getMonth()}`;
         paymentsRef.child('requests').child(currentMonthKey).child(currentUserProfileUsername).set({
@@ -1741,6 +2089,7 @@
         
         for (let monthKey in requests) {
             for (let username in requests[monthKey]) {
+                if (isPlayerOnLongLeave(username)) continue;
                 count++;
                 const div = document.createElement('div');
                 div.className = "p-3 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2 mb-2 text-left";
@@ -1796,6 +2145,7 @@
               yr = document.getElementById('viewYear').value,
               mo = document.getElementById('selMonth').value;
         if(!name || mo === "") return alert("Select Player and Month first");
+        if (isPlayerOnLongLeave(name)) return alert("Fasax Dheer players are excluded from monthly payments.");
         const monthKey = `${yr}-${mo}`;
         const currentStatus = paymentData[monthKey]?.[name] || false;
         paymentsRef.child('records').child(monthKey).child(name).set(!currentStatus);
@@ -1814,11 +2164,9 @@
         }
         const monthKey = `${yr}-${mo}`,
               records = paymentData[monthKey] || {},
-              allPlayers = Object.keys(profiles).sort();
+              allPlayers = getMonthlyPaymentPlayerNames();
 
         allPlayers.forEach(name => {
-            if (name === "FULL CASHIER") return; 
-            
             const hasPaid = records[name] === true;
             let shouldDisplay = (statusType === 'ALL') || (statusType === 'PAID' && hasPaid) || (statusType === 'UNPAID' && !hasPaid);
             if (shouldDisplay) {
@@ -1880,29 +2228,44 @@
         }
 
         const screenshotBtn = document.getElementById('matchSummaryScreenshotBtn');
-        const controls = summaryEl.querySelectorAll('.match-summary-control');
-        const originalDisplay = [];
-
-        // Temporarily hide all controls/buttons so they are not included in the screenshot.
-        controls.forEach((el, index) => {
-            originalDisplay[index] = el.style.display;
-            el.style.display = 'none';
-        });
-
-        if (screenshotBtn) {
-            screenshotBtn.disabled = true;
-        }
+        if (screenshotBtn?.dataset.captureInProgress === 'true') return;
+        if (screenshotBtn) screenshotBtn.dataset.captureInProgress = 'true';
 
         try {
-            // Give the browser a moment to reflow after hiding controls.
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
             const canvas = await html2canvas(summaryEl, {
                 backgroundColor: null,
                 useCORS: true,
                 allowTaint: false,
-                scale: Math.min(2, window.devicePixelRatio || 1),
-                logging: false
+                scale: 4,
+                logging: false,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                onclone: clonedDocument => {
+                    const clonedSummary = clonedDocument.getElementById('footballMatchSummary');
+                    if (!clonedSummary) return;
+
+                    clonedSummary.classList.add('is-capturing-screenshot');
+                    clonedDocument.body.style.width = `${document.documentElement.clientWidth}px`;
+                    const clonedElements = [clonedSummary, ...clonedSummary.querySelectorAll('*')];
+                    const colorFunction = /color\(srgb\s+(-?(?:\d*\.?\d+))\s+(-?(?:\d*\.?\d+))\s+(-?(?:\d*\.?\d+))(?:\s*\/\s*(-?(?:\d*\.?\d+)))?\s*\)/gi;
+
+                    clonedElements.forEach(clonedElement => {
+                        const computedStyle = clonedDocument.defaultView.getComputedStyle(clonedElement);
+                        const properties = Array.from({ length: computedStyle.length }, (_, index) => {
+                            const property = computedStyle[index];
+                            return [property, computedStyle.getPropertyValue(property)];
+                        });
+
+                        properties.forEach(([property, value]) => {
+                            if (!/color\(srgb\b/i.test(value)) return;
+
+                            const compatibleValue = value.replace(colorFunction, (_, red, green, blue, alpha = '1') =>
+                                `rgba(${Math.round(Number(red) * 255)}, ${Math.round(Number(green) * 255)}, ${Math.round(Number(blue) * 255)}, ${alpha})`
+                            );
+                            clonedElement.style.setProperty(property, compatibleValue, 'important');
+                        });
+                    });
+                }
             });
 
             const link = document.createElement('a');
@@ -1910,20 +2273,41 @@
                 .trim()
                 .replace(/[^a-z0-9_-]+/gi, '-');
             link.download = `football-match-summary-${dateText || 'match'}.png`;
-            link.href = canvas.toDataURL('image/png');
+            const screenshotBlob = await new Promise((resolve, reject) => {
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('The screenshot image could not be encoded.'));
+                    }
+                }, 'image/png');
+            });
+            const screenshotUrl = URL.createObjectURL(screenshotBlob);
+            link.href = screenshotUrl;
             link.click();
+            setTimeout(() => URL.revokeObjectURL(screenshotUrl), 1000);
         } catch (error) {
             console.error('Error taking football match summary screenshot:', error);
             alert('Unable to take the screenshot. Please try again.');
         } finally {
-            // Restore the page exactly as it was before the screenshot.
-            controls.forEach((el, index) => {
-                el.style.display = originalDisplay[index];
-            });
-            if (screenshotBtn) {
-                screenshotBtn.disabled = false;
-            }
+            if (screenshotBtn) delete screenshotBtn.dataset.captureInProgress;
         }
+    }
+
+    const CARD_DEDUCTION_START = { year: 2026, month: 9, week: 2 };
+
+    function getCardPenalty(year, month, week, stats) {
+        const periodYear = parseInt(year, 10);
+        const periodMonth = parseInt(month, 10);
+        const periodWeek = parseInt(week, 10);
+        const startsOnOrAfter = periodYear > CARD_DEDUCTION_START.year ||
+            (periodYear === CARD_DEDUCTION_START.year && (
+                periodMonth > CARD_DEDUCTION_START.month ||
+                (periodMonth === CARD_DEDUCTION_START.month && periodWeek >= CARD_DEDUCTION_START.week)
+            ));
+
+        if (!startsOnOrAfter) return 0;
+        return (stats.rV || 0) > 0 ? 10 : ((stats.yV || 0) > 0 ? 5 : 0);
     }
 
     function toggleMatchSummary() {
@@ -1933,6 +2317,38 @@
         if (!summaryEl.classList.contains('hidden')) {
             populateMatchSummary();
         }
+    }
+
+    function updateAvailableWeeks() {
+        const year = parseInt(document.getElementById('viewYear').value, 10);
+        const selectedMonth = document.getElementById('selMonth').value;
+        const inputMonth = document.getElementById('inMonth').value;
+
+        const supportsWeekFive = month => {
+            if (month === '') return false;
+            if (year === 2026) return parseInt(month, 10) === 11;
+            if (year < 2027 || year > 2030) return false;
+            return new Date(year, parseInt(month, 10) + 1, 0).getDate() === 31;
+        };
+
+        const updateSelect = (selectId, month, hasPlaceholder) => {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            const previousValue = select.value;
+            const maxWeek = supportsWeekFive(month) ? 5 : 4;
+            const options = hasPlaceholder ? ['<option value="">-- WEEK --</option>'] : [];
+            for (let week = 1; week <= maxWeek; week++) {
+                options.push(`<option value="${week}">${hasPlaceholder ? 'Week ' + week : 'W' + week}</option>`);
+            }
+            select.innerHTML = options.join('');
+            if (previousValue && parseInt(previousValue, 10) <= maxWeek) {
+                select.value = previousValue;
+            }
+        };
+
+        updateSelect('selWeek', selectedMonth, true);
+        updateSelect('inWeek', inputMonth, false);
     }
 
     function setup() {
@@ -1973,6 +2389,7 @@
             if(ganMonth) ganMonth.innerHTML += `<option value="${i}">${m}</option>`;
             if(editGanMonth) editGanMonth.innerHTML += `<option value="${i}">${m}</option>`;
         });
+        updateAvailableWeeks();
 
         if(ganDay && editGanDay) {
             ganDay.innerHTML = '';
@@ -2020,6 +2437,18 @@
         if(signUpSel) signUpSel.innerHTML = signUpOptions;
         if(ganSel) ganSel.innerHTML = adminOptions;
         if(fasaxSel) fasaxSel.innerHTML = adminOptions;
+        updatePaymentPlayerDropdown();
+    }
+
+    function updatePaymentPlayerDropdown() {
+        const paySel = document.getElementById('payPlayerSelect');
+        if (!paySel) return;
+
+        const currentSelection = paySel.value;
+        const eligibleNames = getMonthlyPaymentPlayerNames();
+        paySel.innerHTML = '<option value="">-- SELECT NAME --</option>' +
+            eligibleNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        if (eligibleNames.includes(currentSelection)) paySel.value = currentSelection;
     }
 
     function releaseName(name) {
@@ -2044,6 +2473,64 @@
             profilesRef.child(name).set({ photo: "", isTaken: false });
             logUserActivity('PLAYER_REGISTERED',{player:name}); alert("Profile Registered without photo!");
         }
+    }
+
+    function updateAwardsStripLeaders(year) {
+        const awardFields = [
+            ['stripMvp', 'manOfMatch'],
+            ['stripTopScorer', 'topScorers'],
+            ['stripTopAssister', 'topAssisters'],
+            ['stripBestGoal', 'bestGoal'],
+            ['stripBestMidfielder', 'bestMidfield'],
+            ['stripBestDefender', 'bestDefender'],
+            ['stripBestAssist', 'bestAssist'],
+            ['stripBestGoalkeeper', 'bestGoalkeeper']
+        ];
+        Promise.all([
+            firebase.database().ref('golaha_match_awards').once('value'),
+            firebase.database().ref('golaha_match_summary').once('value')
+        ]).then(([awardsSnapshot, summariesSnapshot]) => {
+            const awardsByMatch = awardsSnapshot.exists() ? awardsSnapshot.val() : {};
+            const summariesByMatch = summariesSnapshot.exists() ? summariesSnapshot.val() : {};
+            const counts = Object.fromEntries(awardFields.map(([, field]) => [field, {}]));
+            const matchKeys = new Set([...Object.keys(awardsByMatch), ...Object.keys(summariesByMatch)]);
+
+            matchKeys.forEach(matchKey => {
+                if (year && !String(matchKey).startsWith(`${year}-`)) return;
+                const record = { ...(summariesByMatch[matchKey] || {}), ...(awardsByMatch[matchKey] || {}) };
+                awardFields.forEach(([, field]) => {
+                    let value = record[field];
+                    if (field === 'manOfMatch' && !value && record.playerStats) {
+                        const bestPlayer = Object.values(record.playerStats)
+                            .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))[0];
+                        value = bestPlayer?.name || '';
+                    }
+                    const winners = [...new Set(Array.isArray(value) ? value : (value ? [value] : []))];
+                    winners.forEach(name => {
+                        if (name) counts[field][name] = (counts[field][name] || 0) + 1;
+                    });
+                });
+            });
+
+            awardFields.forEach(([elementId, field]) => {
+                const leader = Object.entries(counts[field]).sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))[0];
+                const element = document.getElementById(elementId);
+                const photoElement = document.getElementById(`${elementId}Photo`);
+                if (element) element.innerText = leader ? `${leader[0]} (${leader[1]})` : '---';
+                if (photoElement) {
+                    const profile = leader ? profiles[leader[0]] : null;
+                    const photo = typeof profile === 'string' ? profile : profile?.photo;
+                    if (photo) {
+                        photoElement.src = photo;
+                        photoElement.classList.remove('hidden');
+                    } else {
+                        photoElement.src = '';
+                        photoElement.classList.add('hidden');
+                    }
+                }
+            });
+            document.getElementById('singleAwardsStrip')?.classList.remove('hidden');
+        }).catch(error => console.error('Error loading award strip leaders:', error));
     }
 
     function render() {
@@ -2075,7 +2562,8 @@
                         let matchSkillsSum = d.sc ? d.sc.reduce((a, b) => a + b, 0) : 0;
                         let matchGoalPoints = (d.gV || 0) >= 1 ? 6 : 0;
                         let matchAssistPoints = (d.aV || 0) >= 1 ? 4 : 0;
-                        let matchTotalCalculated = matchSkillsSum + matchGoalPoints + matchAssistPoints;
+                        let cardPenalty = getCardPenalty(yr, m, w, d);
+                        let matchTotalCalculated = matchSkillsSum + matchGoalPoints + matchAssistPoints - cardPenalty;
 
                         pY.t += matchTotalCalculated;
                         gY.v += (d.gV || 0);
@@ -2139,24 +2627,36 @@
                     ((filteredWinners.find(x => x.n === b.n)?.t || 0) - (filteredWinners.find(x => x.n === a.n)?.t || 0))
                 )[0];
 
-                document.getElementById(`name-${t}`).innerText = topMvp;
-                document.getElementById(`goal-${t}`).innerText = topScorer?.v > 0 ? `${topScorer.n} (${topScorer.v})` : "---";
-                document.getElementById(`assist-${t}`).innerText = topAssist?.v > 0 ? `${topAssist.n} (${topAssist.v})` : "---";
+                const nameEl = document.getElementById(`name-${t}`);
+                const goalEl = document.getElementById(`goal-${t}`);
+                const assistEl = document.getElementById(`assist-${t}`);
+                if (nameEl) nameEl.innerText = topMvp;
+                if (goalEl) goalEl.innerText = topScorer?.v > 0 ? `${topScorer.n} (${topScorer.v})` : "---";
+                if (assistEl) assistEl.innerText = topAssist?.v > 0 ? `${topAssist.n} (${topAssist.v})` : "---";
                 
                 const mvpPhoto = typeof profiles[topMvp] === 'string' ? profiles[topMvp] : profiles[topMvp]?.photo;
                 const scPhoto = typeof profiles[topScorer?.n] === 'string' ? profiles[topScorer?.n] : profiles[topScorer?.n]?.photo;
                 const asPhoto = typeof profiles[topAssist?.n] === 'string' ? profiles[topAssist?.n] : profiles[topAssist?.n]?.photo;
 
-                document.getElementById(`box-${t}`).innerHTML = mvpPhoto ? `<img src="${mvpPhoto}" class="award-img">` : '';
-                document.getElementById(`img-goal-${t}`).innerHTML = (topScorer?.v > 0 && scPhoto) ? `<img src="${scPhoto}" class="award-img">` : '';
-                document.getElementById(`img-assist-${t}`).innerHTML = (topAssist?.v > 0 && asPhoto) ? `<img src="${asPhoto}" class="award-img">` : '';
+                const boxEl = document.getElementById(`box-${t}`);
+                const goalPhotoEl = document.getElementById(`img-goal-${t}`);
+                const assistPhotoEl = document.getElementById(`img-assist-${t}`);
+                if (boxEl) boxEl.innerHTML = mvpPhoto ? `<img src="${mvpPhoto}" class="award-img">` : '';
+                if (goalPhotoEl) goalPhotoEl.innerHTML = (topScorer?.v > 0 && scPhoto) ? `<img src="${scPhoto}" class="award-img">` : '';
+                if (assistPhotoEl) assistPhotoEl.innerHTML = (topAssist?.v > 0 && asPhoto) ? `<img src="${asPhoto}" class="award-img">` : '';
             } else {
-                document.getElementById(`name-${t}`).innerText = "---";
-                document.getElementById(`goal-${t}`).innerText = "---";
-                document.getElementById(`assist-${t}`).innerText = "---";
-                document.getElementById(`box-${t}`).innerHTML = '';
-                document.getElementById(`img-goal-${t}`).innerHTML = '';
-                document.getElementById(`img-assist-${t}`).innerHTML = '';
+                const nameEl = document.getElementById(`name-${t}`);
+                const goalEl = document.getElementById(`goal-${t}`);
+                const assistEl = document.getElementById(`assist-${t}`);
+                const boxEl = document.getElementById(`box-${t}`);
+                const goalPhotoEl = document.getElementById(`img-goal-${t}`);
+                const assistPhotoEl = document.getElementById(`img-assist-${t}`);
+                if (nameEl) nameEl.innerText = "---";
+                if (goalEl) goalEl.innerText = "---";
+                if (assistEl) assistEl.innerText = "---";
+                if (boxEl) boxEl.innerHTML = '';
+                if (goalPhotoEl) goalPhotoEl.innerHTML = '';
+                if (assistPhotoEl) assistPhotoEl.innerHTML = '';
             }
         });
 
@@ -2180,12 +2680,13 @@
 
             const row = document.createElement('tr');
             row.setAttribute('onclick', `showReport("${p.n}")`);
-            row.innerHTML = `<td class="text-left oswald uppercase p-4">${p.n}</td><td class="text-center">${sH}</td><td class="text-blue-400">${p.count}</td><td class="hidden text-red-400 font-bold">${p.g}</td><td class="hidden text-green-400 font-bold">${p.a}</td><td class="hidden text-indigo-400 font-bold">${p.s[6] !== undefined ? p.s[6] : 0}</td><td class="hidden admin-only text-yellow-500">${p.y}</td><td class="hidden admin-only text-red-500">${p.r}</td><td class="total-col font-black oswald">${p.t}</td><td><span class="${i+1 === 1 ? 'rank-badge rank-badge-1' : 'rank-badge'}">${i+1 === 1 ? '🥇' : i+1}</span></td>${(isUserAdmin || ['sacadcabdale@golaha.com'].includes((auth.currentUser?.email||'').toLowerCase())) ? `<td class="admin-only space-x-2"><button onclick="event.stopPropagation(); releaseName('${p.n}')" class="text-green-500">🔓</button><button onclick="event.stopPropagation(); editEntry('${p.n}')" class="text-blue-400">✎</button><button onclick="event.stopPropagation(); deleteEntry('${p.n}')" class="text-red-500">✖</button></td>` : ''}`;
+            row.innerHTML = `<td class="text-left oswald uppercase p-4">${p.n}</td><td class="text-center">${sH}</td><td class="text-blue-400">${p.count}</td><td class="text-red-400 font-bold">${p.g}</td><td class="hidden text-green-400 font-bold">${p.a}</td><td class="hidden text-indigo-400 font-bold">${p.s[6] !== undefined ? p.s[6] : 0}</td><td class="hidden admin-only text-yellow-500">${p.y}</td><td class="hidden admin-only text-red-500">${p.r}</td><td class="total-col font-black oswald">${p.t}</td><td><span class="${i+1 === 1 ? 'rank-badge rank-badge-1' : 'rank-badge'}">${i+1 === 1 ? '🥇' : i+1}</span></td>${(isUserAdmin || ['sacadcabdale@golaha.com'].includes((auth.currentUser?.email||'').toLowerCase())) ? `<td class="admin-only space-x-2"><button onclick="event.stopPropagation(); releaseName('${p.n}')" class="text-green-500">🔓</button><button onclick="event.stopPropagation(); editEntry('${p.n}')" class="text-blue-400">✎</button><button onclick="event.stopPropagation(); deleteEntry('${p.n}')" class="text-red-500">✖</button></td>` : ''}`;
             body.appendChild(row);
         });
 
         // Populate the match summary with current data
         populateMatchSummary();
+        updateAwardsStripLeaders(yr);
     }
 
     function saveStats() {
@@ -2242,6 +2743,9 @@
         const name = document.getElementById('fasaxPlayerSelect').value;
         const status = document.getElementById('fasaxStatusSelect').value;
         if(!name) return alert("Fadlan dooro magaca ciyaaryahanka.");
+        if (!['fasax', 'fasax dheer', 'kasoo noqo'].includes(status)) {
+            return alert("Fadlan dooro xaalad fasax oo sax ah.");
+        }
 
         fasaxRef.child(name).set({
             status: status,
@@ -2249,6 +2753,9 @@
         }).then(() => {
             logUserActivity('FASAX_UPDATED', { player: name, status: status });
             alert(`Xaaladda fasaxa ee ${name} waxaa loo badalay: ${status}`);
+        }).catch(error => {
+            console.error('Unable to update player leave status:', error);
+            alert("Fasax status-ka lama kaydin. Fadlan mar kale isku day.");
         });
     }
 
@@ -2273,9 +2780,11 @@
             const row = document.createElement('tr');
             row.className = "hover:bg-white/5 transition";
             
-            const statusHtml = status === 'fasax' 
-                ? `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-red-500/20 text-red-400 uppercase">FASAX</span>` 
-                : `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-green-500/20 text-green-400 uppercase">KASOO NOQDAY</span>`;
+            const statusHtml = status === 'fasax dheer'
+                ? `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-orange-500/20 text-orange-400 uppercase">FASAX DHEER</span>`
+                : status === 'fasax'
+                    ? `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-red-500/20 text-red-400 uppercase">FASAX</span>`
+                    : `<span class="px-2 py-0.5 rounded text-[8px] font-black tracking-wider bg-green-500/20 text-green-400 uppercase">KASOO NOQDAY</span>`;
 
             row.innerHTML = `
                 <td class="p-3 font-bold uppercase tracking-wide">${name}</td>
@@ -2297,6 +2806,7 @@
         const vW = document.getElementById('selWeek').value;
 
         if (!yr || !vM || !vW) return;
+        loadMatchTeamColors(`${yr}-${vM}-${vW}`);
 
         const dateLabel = document.getElementById('matchSummaryDate');
         if (dateLabel) {
@@ -2313,7 +2823,7 @@
         document.getElementById('topAssistName').innerText = '';
 
         let redGoals = {}, yellowGoals = {}, allAssists = {}, playerStats = {};
-        let topMvpPlayer = null, topMvpScore = 0;
+        let topMvpPlayer = null;
 
         console.log('Loading data for:', yr, vM, vW);
         console.log('Available players in profiles:', Object.keys(profiles).slice(0, 5));
@@ -2332,7 +2842,7 @@
                     const yellows = stats.yV || 0;
                     const reds = stats.rV || 0;
                     const skillSum = (stats.sc || []).reduce((a, b) => a + b, 0);
-                    const totalScore = skillSum + (goals >= 1 ? 6 : 0) + (assists >= 1 ? 4 : 0);
+                    const totalScore = skillSum + (goals >= 1 ? 6 : 0) + (assists >= 1 ? 4 : 0) - getCardPenalty(yr, vM, vW, stats);
 
                     if (goals > 0) {
                         console.log(`${playerName} scored ${goals} goals`);
@@ -2347,11 +2857,6 @@
                         skillSum,
                         totalScore
                     };
-
-                    if (totalScore > topMvpScore) {
-                        topMvpScore = totalScore;
-                        topMvpPlayer = playerName;
-                    }
 
                     let playerTeam = 'YELLOW';
                     if (stats.team) {
@@ -2381,6 +2886,14 @@
             }
         }
 
+        topMvpPlayer = Object.values(playerStats)
+            .filter(player => player.totalScore > 0)
+            .sort((a, b) =>
+                (b.totalScore - a.totalScore) ||
+                (b.goals - a.goals) ||
+                (b.assists - a.assists)
+            )[0]?.name || null;
+
         // Find top scorers (including ties)
         const topGoalCount = Math.max(...Object.values(redGoals).concat(Object.values(yellowGoals)), 0);
         const topScorers = Object.entries(redGoals).concat(Object.entries(yellowGoals))
@@ -2402,18 +2915,14 @@
                 redGoalsDisplay.innerHTML = Object.entries(redGoals)
                     .sort((a, b) => b[1] - a[1])
                     .map(([name, count]) => {
-                        const playerPhoto = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
                         return `
-                            <div class="flex flex-col items-center gap-1 px-2">
-                                <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 border border-red-500/50 flex items-center justify-center">
-                                    ${playerPhoto ? `<img src="${playerPhoto}" alt="${name}" class="w-full h-full object-cover">` : '<span class="text-xl">👤</span>'}
-                                </div>
-                                <p class="text-[11px] font-bold text-white text-center leading-tight max-w-[50px]">${name}</p>
-                                <p class="text-[9px] text-red-400 font-black">⚽ x${count}</p>
+                            <div class="team-player-tile team-red flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl border border-red-500/50">
+                                <p class="text-[11px] font-bold text-white text-center leading-tight">${name}</p>
+                                <p class="team-goal-count-red text-[9px] font-black">⚽ x${count}</p>
                             </div>
                         `;
                     }).join('');
-                redGoalsDisplay.innerHTML += `<div class="mt-3 text-xs text-red-400 font-bold uppercase">Team Total: ${totalRedGoals}</div>`;
+                redGoalsDisplay.innerHTML += `<div class="team-total-red mt-3 text-xs font-bold uppercase">Team Total: ${totalRedGoals}</div>`;
             } else {
                 redGoalsDisplay.innerHTML = '<div class="text-gray-500 text-xs">No goals</div>';
             }
@@ -2425,18 +2934,14 @@
                 yellowGoalsDisplay.innerHTML = Object.entries(yellowGoals)
                     .sort((a, b) => b[1] - a[1])
                     .map(([name, count]) => {
-                        const playerPhoto = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
                         return `
-                            <div class="flex flex-col items-center gap-1 px-2">
-                                <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 border border-yellow-500/50 flex items-center justify-center">
-                                    ${playerPhoto ? `<img src="${playerPhoto}" alt="${name}" class="w-full h-full object-cover">` : '<span class="text-xl">👤</span>'}
-                                </div>
-                                <p class="text-[11px] font-bold text-white text-center leading-tight max-w-[50px]">${name}</p>
-                                <p class="text-[9px] text-yellow-400 font-black">⚽ x${count}</p>
+                            <div class="team-player-tile team-yellow flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl border border-yellow-500/50">
+                                <p class="text-[11px] font-bold text-white text-center leading-tight">${name}</p>
+                                <p class="team-goal-count-yellow text-[9px] font-black">⚽ x${count}</p>
                             </div>
                         `;
                     }).join('');
-                yellowGoalsDisplay.innerHTML += `<div class="mt-3 text-xs text-yellow-400 font-bold uppercase">Team Total: ${totalYellowGoals}</div>`;
+                yellowGoalsDisplay.innerHTML += `<div class="team-total-yellow mt-3 text-xs font-bold uppercase">Team Total: ${totalYellowGoals}</div>`;
             } else {
                 yellowGoalsDisplay.innerHTML = '<div class="text-gray-500 text-xs">No goals</div>';
             }
@@ -2476,13 +2981,9 @@
             const yellowPlayers = cardedPlayers.filter(p => p.yV > 0);
 
             const renderSmall = (player) => {
-                const photo = typeof profiles[player.name] === 'string' ? profiles[player.name] : profiles[player.name]?.photo;
                 return `
-                    <div class="flex flex-col items-center gap-1 px-2">
-                        <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 border border-white/10 flex items-center justify-center">
-                            ${photo ? `<img src="${photo}" alt="${player.name}" class="w-full h-full object-cover">` : '<span class="text-xl">👤</span>'}
-                        </div>
-                        <p class="text-[11px] font-bold text-white text-center leading-tight max-w-[60px]">${player.name}</p>
+                    <div class="team-player-tile disciplinary-card-tile ${player.rV > 0 ? 'team-red' : 'team-yellow'} flex flex-col items-center gap-1 px-3 py-2 rounded-xl border border-white/10">
+                        <p class="text-[11px] font-bold text-white text-center leading-tight">${player.name}</p>
                         <div class="flex items-center gap-2 mt-1">
                             ${player.rV > 0 ? `<span class="text-[10px] px-2 py-1 rounded-full bg-red-600/20 text-red-100 border border-red-500">🟥 ${player.rV}</span>` : ''}
                             ${player.yV > 0 ? `<span class="text-[10px] px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-100 border border-yellow-400">🟨 ${player.yV}</span>` : ''}
@@ -2500,12 +3001,8 @@
 
             // Populate Disciplinary Record section if present using award-style tiles
             const renderDisciplinary = (player, type) => {
-                const photo = typeof profiles[player.name] === 'string' ? profiles[player.name] : profiles[player.name]?.photo;
                 return `
-                    <div class="award-tile text-center p-4">
-                        <div class="card-player-photo mx-auto mb-3 rounded-2xl overflow-hidden bg-black/40 border ${type === 'RED' ? 'border-red-500/40' : 'border-yellow-500/40'}">
-                            ${photo ? `<img src="${photo}" alt="${player.name}" class="w-full h-full object-cover">` : '<span class="text-2xl">👤</span>'}
-                        </div>
+                    <div class="award-tile team-player-tile ${type === 'RED' ? 'team-red' : 'team-yellow'} text-center p-4">
                         <p class="card-player-name mb-1">${player.name}</p>
                         <p class="card-player-role ${type === 'RED' ? 'text-red-400' : 'text-yellow-400'}">${type === 'RED' ? 'RED CARD' : 'YELLOW CARD'}</p>
                         <div class="mt-3 inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 ${type === 'RED' ? 'bg-red-600/20 text-red-100 border border-red-500' : 'bg-yellow-500/20 text-yellow-100 border border-yellow-400'} text-[10px] font-semibold">
@@ -2524,7 +3021,7 @@
         try {
             const scoreKey = `${yr}-${vM}-${vW}`;
             const summaryRef = firebase.database().ref(`golaha_match_summary/${scoreKey}`);
-            const manOfMatch = document.getElementById('manOfMatchName')?.innerText || '';
+            const manOfMatch = topMvpPlayer || document.getElementById('manOfMatchName')?.innerText || '';
             const summaryData = {
                 year: yr,
                 month: vM,
@@ -2578,6 +3075,18 @@
         const awardsRef = firebase.database().ref(`golaha_match_awards/${awardsKey}`);
         const summaryRef = firebase.database().ref(`golaha_match_summary/${scoreKey}`);
 
+        const getSummaryTeam = (name) => {
+            const knownTeam = playerStats[name]?.team;
+            if (knownTeam) return knownTeam;
+            return name && (name.includes('(R)') || name.toLowerCase().includes('red')) ? 'RED' : 'YELLOW';
+        };
+
+        const applyTeamClass = (element, team) => {
+            if (!element) return;
+            element.classList.remove('team-red', 'team-yellow');
+            element.classList.add(team === 'RED' ? 'team-red' : 'team-yellow');
+        };
+
         const setAwardImage = (imgId, name) => {
             const imgEl = document.getElementById(imgId);
             if (!imgEl) return;
@@ -2585,18 +3094,28 @@
             if (!name) {
                 imgEl.style.display = 'none';
                 imgEl.src = '';
-                if (wrapper) wrapper.style.display = 'none';
+                if (wrapper) {
+                    wrapper.classList.remove('has-player-photo');
+                    wrapper.style.display = 'none';
+                }
                 return;
             }
+            applyTeamClass(wrapper, getSummaryTeam(name));
             const photo = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
             if (photo) {
                 imgEl.src = photo;
                 imgEl.style.display = '';
-                if (wrapper) wrapper.style.display = '';
+                if (wrapper) {
+                    wrapper.classList.add('has-player-photo');
+                    wrapper.style.display = '';
+                }
             } else {
                 imgEl.style.display = 'none';
                 imgEl.src = '';
-                if (wrapper) wrapper.style.display = 'none';
+                if (wrapper) {
+                    wrapper.classList.remove('has-player-photo');
+                    wrapper.style.display = 'none';
+                }
             }
         };
 
@@ -2608,23 +3127,11 @@
                 return;
             }
 
-            const photoHtml = (name, size = 'w-16 h-16') => {
-                const photo = typeof profiles[name] === 'string' ? profiles[name] : profiles[name]?.photo;
-                return `
-                    <div class="${size} rounded-full overflow-hidden bg-black border border-yellow-500/20 shadow-lg">
-                        ${photo ? `<img src="${photo}" alt="${name}" class="w-full h-full object-cover">` : '<span class="text-2xl">👤</span>'}
-                    </div>
-                `;
-            };
-
             if (names.length === 1) {
                 const name = names[0];
                 const countText = count ? ` x${count}` : '';
                 container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center gap-3">
-                        <div class="bg-black/90 rounded-2xl p-4 flex items-center justify-center">
-                            ${photoHtml(name, 'w-20 h-20')}
-                        </div>
+                    <div class="flex flex-col items-center justify-center gap-1">
                         <div class="text-center">
                             <p class="card-player-name text-[0.95rem]">${name}${countText}</p>
                         </div>
@@ -2635,19 +3142,14 @@
 
             const countText = count ? ` x${count}` : '';
             container.innerHTML = `
-                <div class="bg-black/90 rounded-2xl p-4 flex items-center justify-center">
-                    <div class="grid grid-cols-2 gap-3">
-                        ${names.map(name => photoHtml(name, 'w-14 h-14')).join('')}
-                    </div>
-                </div>
-                <div class="mt-3 flex flex-wrap justify-center gap-3">
+                <div class="flex flex-wrap justify-center gap-2">
                     ${names.map(name => `<p class="text-xs font-black uppercase text-white text-center max-w-[100px]">${name}${countText}</p>`).join('')}
                 </div>
             `;
         };
 
         const applySavedAwards = (savedAwards = {}) => {
-            const manOfMatchName = savedAwards?.manOfMatch || topMvpPlayer || '';
+            const manOfMatchName = topMvpPlayer || savedAwards?.manOfMatch || '';
             const topScorerNames = Array.isArray(savedAwards?.topScorers) && savedAwards.topScorers.length > 0 ? savedAwards.topScorers : topScorers;
             const topAssistNames = Array.isArray(savedAwards?.topAssisters) && savedAwards.topAssisters.length > 0 ? savedAwards.topAssisters : topAssisters;
 
@@ -2655,7 +3157,7 @@
             setAwardImage('manOfMatchImg', manOfMatchName);
 
             setWinnerNames(topScorerNames, 'topScorersList', topGoalCount > 0 ? topGoalCount : null);
-            setAwardImage('topScorer1Img', '');
+            setAwardImage('topScorer1Img', topScorerNames[0] || '');
 
             if (savedAwards?.bestGoal) {
                 document.getElementById('bestGoalName').innerText = savedAwards.bestGoal;
@@ -2679,7 +3181,7 @@
             }
 
             setWinnerNames(topAssistNames, 'topAssistName', topAssistCount > 0 ? topAssistCount : null);
-            setAwardImage('topAssistImg', '');
+            setAwardImage('topAssistImg', topAssistNames[0] || '');
         };
 
         Promise.all([awardsRef.once('value'), summaryRef.once('value')])
@@ -2703,6 +3205,40 @@
             topScorers: topScorers,
             topAssisters: topAssisters
         };
+    }
+
+    function toggleAwardTile(tile) {
+        const grid = tile?.closest('.match-summary-awards-grid');
+        if (!grid) return;
+
+        const wasExpanded = tile.classList.contains('is-expanded');
+        grid.querySelectorAll('.award-tile.is-expanded').forEach(expandedTile => {
+            expandedTile.classList.remove('is-expanded');
+            expandedTile.setAttribute('aria-expanded', 'false');
+        });
+        if (!wasExpanded) {
+            tile.classList.add('is-expanded');
+            tile.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    function closeExpandedAwardTile(event) {
+        if (event.target.closest('.award-tile')) return;
+        const grid = event.currentTarget;
+        grid.querySelectorAll('.award-tile.is-expanded').forEach(tile => {
+            tile.classList.remove('is-expanded');
+            tile.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function handleAwardTileKeydown(event, tile) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleAwardTile(tile);
+        } else if (event.key === 'Escape') {
+            tile.classList.remove('is-expanded');
+            tile.setAttribute('aria-expanded', 'false');
+        }
     }
 
     function populateAwardsForm() {
@@ -2904,38 +3440,42 @@
         if (!yr || !vM || !vW) return alert('Please select Year, Month, and Week first');
 
         document.getElementById('editGoalsWeekDisplay').innerText = `WEEK ${vW}`;
+        loadMatchTeamColors(`${yr}-${vM}-${vW}`);
 
         document.getElementById('guestPlayerName').value = '';
         document.getElementById('guestPlayerGoals').value = '';
         document.getElementById('guestPlayerTeam').value = 'RED';
+        updateGoalTeamSelectColor(document.getElementById('guestPlayerTeam'));
 
         const container = document.getElementById('editGoalsContainer');
         container.innerHTML = '';
 
-        // Load only the goal scorers from the selected week
-        const scorerPlayers = Object.keys(profiles).sort().filter(playerName => {
-            const playerData = db[yr] && db[yr][playerName] && db[yr][playerName][vM] && db[yr][playerName][vM][vW];
-            return playerData && (playerData.gV || 0) > 0;
+        const weekPlayers = db[yr] || {};
+        const scorerPlayers = [...new Set([...Object.keys(profiles), ...Object.keys(weekPlayers)])].sort().filter(playerName => {
+            const playerData = weekPlayers[playerName]?.[vM]?.[vW];
+            return playerData && ((playerData.gV || 0) > 0 || playerData.guest === true || !profiles[playerName]);
         });
 
         if (scorerPlayers.length === 0) {
             container.innerHTML = '<p class="text-gray-400 text-sm">No goal scorers found for the selected week. You can still add a guest player below.</p>';
         } else {
             scorerPlayers.forEach(playerName => {
-                const playerData = db[yr][playerName][vM][vW];
+                const playerData = weekPlayers[playerName][vM][vW];
                 const currentGoals = playerData.gV || 0;
                 const currentYellow = playerData.yV || 0;
                 const currentRed = playerData.rV || 0;
                 const storedTeam = playerData.team || (playerName.includes('(R)') ? 'RED' : 'YELLOW');
                 const entryId = playerName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+                const isGuest = playerData.guest === true || !profiles[playerName];
+                const escapedPlayerName = escapeGoalEntryText(playerName);
 
                 container.innerHTML += `
-                    <div class="goal-entry p-4 bg-black/40 rounded-lg border border-white/20" data-player-name="${playerName}">
+                    <div class="goal-entry p-4 bg-black/40 rounded-lg border border-white/20" data-player-name="${escapedPlayerName}" data-guest="${isGuest}" data-saved="true">
                         <div class="flex items-center justify-between gap-4 mb-3">
-                            <p class="text-sm font-bold text-white">${playerName}</p>
-                            <select id="team_${entryId}" class="px-3 py-2 rounded-lg bg-black/60 border border-white/20 font-bold text-white text-xs focus:outline-none">
-                                <option value="RED" ${storedTeam === 'RED' ? 'selected' : ''}>RED</option>
-                                <option value="YELLOW" ${storedTeam === 'YELLOW' ? 'selected' : ''}>YELLOW</option>
+                            <p class="text-sm font-bold text-white">${escapedPlayerName}${isGuest ? ' <span class="text-xs text-gray-400">(Guest)</span>' : ''}</p>
+                            <select id="team_${entryId}" class="goal-team-select px-3 py-2 rounded-lg bg-black/60 border border-white/20 font-bold text-xs focus:outline-none" onchange="updateGoalTeamSelectColor(this)">
+                                <option value="RED" class="goal-team-red" ${storedTeam === 'RED' ? 'selected' : ''}>RED</option>
+                                <option value="YELLOW" class="goal-team-yellow" ${storedTeam === 'YELLOW' ? 'selected' : ''}>YELLOW</option>
                             </select>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
@@ -2952,10 +3492,13 @@
                                 <input type="number" id="red_${entryId}" value="${currentRed}" min="0" max="10" class="w-full p-2 rounded-lg bg-black/60 border border-red-600/30 font-bold text-red-600 text-center focus:outline-none">
                             </div>
                         </div>
+                        ${isGuest ? '<button type="button" onclick="deleteGuestGoalEntry(this)" class="mt-3 px-3 py-2 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 text-xs font-black uppercase hover:bg-red-600 hover:text-white transition">Delete Guest</button>' : ''}
                     </div>
                 `;
             });
         }
+
+        container.querySelectorAll('.goal-team-select').forEach(updateGoalTeamSelectColor);
 
         const modal = document.getElementById('editGoalsModal');
         modal.classList.remove('hidden');
@@ -2975,15 +3518,16 @@
         if (!guestName) return alert('Please enter the guest player name.');
         if (guestGoals < 0) return alert('Please enter a valid goal count.');
 
-        const sanitizedId = guestName.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
+        const sanitizedId = `${guestName.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_')}_${Date.now()}`;
+        const escapedGuestName = escapeGoalEntryText(guestName);
 
         container.insertAdjacentHTML('beforeend', `
-            <div class="goal-entry p-4 bg-black/40 rounded-lg border border-white/20" data-player-name="${guestName}">
+            <div class="goal-entry p-4 bg-black/40 rounded-lg border border-white/20" data-player-name="${escapedGuestName}" data-guest="true" data-saved="false">
                 <div class="flex items-center justify-between gap-4 mb-3">
-                    <p class="text-sm font-bold text-white">${guestName} <span class="text-xs text-gray-400">(Guest)</span></p>
-                    <select id="team_${sanitizedId}" class="px-3 py-2 rounded-lg bg-black/60 border border-white/20 font-bold text-white text-xs focus:outline-none">
-                        <option value="RED" ${guestTeam === 'RED' ? 'selected' : ''}>RED</option>
-                        <option value="YELLOW" ${guestTeam === 'YELLOW' ? 'selected' : ''}>YELLOW</option>
+                    <p class="text-sm font-bold text-white">${escapedGuestName} <span class="text-xs text-gray-400">(Guest)</span></p>
+                    <select id="team_${sanitizedId}" class="goal-team-select px-3 py-2 rounded-lg bg-black/60 border border-white/20 font-bold text-xs focus:outline-none" onchange="updateGoalTeamSelectColor(this)">
+                        <option value="RED" class="goal-team-red" ${guestTeam === 'RED' ? 'selected' : ''}>RED</option>
+                        <option value="YELLOW" class="goal-team-yellow" ${guestTeam === 'YELLOW' ? 'selected' : ''}>YELLOW</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
@@ -3000,12 +3544,52 @@
                         <input type="number" id="red_${sanitizedId}" value="0" min="0" max="10" class="w-full p-2 rounded-lg bg-black/60 border border-red-600/30 font-bold text-red-600 text-center focus:outline-none">
                     </div>
                 </div>
+                <button type="button" onclick="deleteGuestGoalEntry(this)" class="mt-3 px-3 py-2 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 text-xs font-black uppercase hover:bg-red-600 hover:text-white transition">Delete Guest</button>
             </div>
         `);
+        updateGoalTeamSelectColor(container.lastElementChild.querySelector('.goal-team-select'));
 
         guestNameInput.value = '';
         guestGoalsInput.value = '';
         guestTeamSelect.value = 'RED';
+    }
+
+    function escapeGoalEntryText(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
+    }
+
+    async function deleteGuestGoalEntry(button) {
+        const entry = button?.closest('.goal-entry');
+        const playerName = entry?.dataset.playerName;
+        if (!entry || !playerName) return alert('Could not identify this guest player.');
+        if (!confirm(`Delete guest player "${playerName}" from this match week?`)) return;
+
+        if (entry.dataset.saved === 'true') {
+            const yr = document.getElementById('viewYear').value;
+            const vM = document.getElementById('selMonth').value;
+            const vW = document.getElementById('selWeek').value;
+            try {
+                await firebase.database().ref(`golaha_data/${yr}/${playerName}/${vM}/${vW}`).remove();
+                logUserActivity('ATHLETE_DELETED', { player: playerName, year: yr, month: vM, week: vW });
+                if (db[yr]?.[playerName]?.[vM]) delete db[yr][playerName][vM][vW];
+            } catch (error) {
+                console.error(`Error deleting guest player ${playerName}:`, error);
+                alert(`Could not delete guest player "${playerName}". Please try again.`);
+                return;
+            }
+        }
+
+        entry.remove();
+        if (!document.querySelector('#editGoalsContainer .goal-entry')) {
+            document.getElementById('editGoalsContainer').innerHTML = '<p class="text-gray-400 text-sm">No goal scorers found for the selected week. You can still add a guest player below.</p>';
+        }
+        populateMatchSummary();
     }
 
     function closeEditGoalsModal() {
@@ -3014,15 +3598,15 @@
         modal.classList.remove('flex');
     }
 
-    function saveEditedGoals() {
+    async function saveEditedGoals() {
         const yr = document.getElementById('viewYear').value;
         const vM = document.getElementById('selMonth').value;
         const vW = document.getElementById('selWeek').value;
 
-        const goalEntries = document.querySelectorAll('.goal-entry');
+        const goalEntries = [...document.querySelectorAll('#editGoalsContainer .goal-entry')];
         if (goalEntries.length === 0) return alert('No goal entries to save.');
 
-        let updateCount = 0;
+        const updates = [];
 
         goalEntries.forEach(entry => {
             const goalsInput = entry.querySelector('input[id^="goals_"]');
@@ -3039,24 +3623,34 @@
             const team = teamSelect.value;
 
             const playerRef = firebase.database().ref(`golaha_data/${yr}/${playerName}/${vM}/${vW}`);
-            playerRef.update({
+            const playerUpdate = {
                 gV: goals,
                 yV: yellow,
                 rV: red,
                 team: team,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                updateCount++;
-            }).catch(err => {
-                console.error(`Error updating ${playerName}:`, err);
-            });
+            };
+            if (entry.dataset.guest === 'true') playerUpdate.guest = true;
+            updates.push(playerRef.update(playerUpdate).then(() => {
+                entry.dataset.saved = 'true';
+            }));
         });
 
-        setTimeout(() => {
-            alert(`✅ Goals Updated! (${updateCount} players)`);
+        if (updates.length === 0) return alert('No valid goal entries to save.');
+
+        const saveButton = document.getElementById('saveEditedGoalsBtn');
+        if (saveButton) saveButton.disabled = true;
+        try {
+            await Promise.all(updates);
+            alert(`✅ Goals Updated! (${updates.length} players)`);
             closeEditGoalsModal();
             populateMatchSummary();
-        }, 1000);
+        } catch (error) {
+            console.error('Error saving edited goals:', error);
+            alert('Could not save all goal entries. Please check your connection and try again.');
+        } finally {
+            if (saveButton) saveButton.disabled = false;
+        }
     }
 
     function openEditScoreModal() {
@@ -3354,9 +3948,211 @@
             imgEl.classList.add('hidden');
         }
 
+        renderPerformanceHistoryCharts(playerName);
+
         // 5. Open Modal
         const modal = document.getElementById('reportModal');
         modal.style.display = 'flex';
+    }
+
+    function renderPerformanceHistoryCharts(playerName) {
+        if (typeof Chart === 'undefined') return;
+
+        const year = document.getElementById('viewYear')?.value;
+        const playerYear = db[year]?.[playerName] || {};
+        const history = [];
+
+        Object.keys(playerYear)
+            .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+            .forEach(month => {
+                Object.keys(playerYear[month] || {})
+                    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+                    .forEach(week => {
+                        const stats = playerYear[month][week];
+                        if (!stats) return;
+                        const goals = stats.gV || 0;
+                        const assists = stats.aV || 0;
+                        const skillPoints = (stats.sc || []).reduce((sum, value) => sum + value, 0);
+                        const points = skillPoints + (goals >= 1 ? 6 : 0) + (assists >= 1 ? 4 : 0) - getCardPenalty(year, month, week, stats);
+                        history.push({
+                            label: `${MONTHS[parseInt(month, 10)] || month} W${week}`,
+                            points,
+                            goals,
+                            assists
+                        });
+                    });
+            });
+
+        const labels = history.map(item => item.label);
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10, weight: 'bold' } } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+                y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } }
+            }
+        };
+
+        if (playerPointsChart) playerPointsChart.destroy();
+        if (playerContributionsChart) playerContributionsChart.destroy();
+
+        playerPointsChart = new Chart(document.getElementById('repPointsChart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Weekly Points',
+                    data: history.map(item => item.points),
+                    borderColor: '#fbbf24',
+                    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+                    pointBackgroundColor: '#fbbf24',
+                    pointRadius: 3,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: chartDefaults
+        });
+
+        playerContributionsChart = new Chart(document.getElementById('repContributionsChart'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Goals', data: history.map(item => item.goals), backgroundColor: '#ef4444' },
+                    { label: 'Assists', data: history.map(item => item.assists), backgroundColor: '#22c55e' }
+                ]
+            },
+            options: chartDefaults
+        });
+    }
+
+    function showMyPerformance() {
+        const playerName = currentUserProfileUsername || auth.currentUser?.displayName;
+        if (!playerName) return alert('Your player profile is not available yet.');
+        if (!currentCalculatedStats[playerName]) render();
+        if (currentCalculatedStats[playerName]) {
+            showReport(playerName);
+        } else {
+            alert('No individual performance is available for the selected period.');
+        }
+    }
+
+    function showAwardRanking(field, label) {
+        const year = document.getElementById('viewYear')?.value;
+        Promise.all([
+            firebase.database().ref('golaha_match_awards').once('value'),
+            firebase.database().ref('golaha_match_summary').once('value')
+        ]).then(([awardsSnapshot, summariesSnapshot]) => {
+            const awardsByMatch = awardsSnapshot.exists() ? awardsSnapshot.val() : {};
+            const summariesByMatch = summariesSnapshot.exists() ? summariesSnapshot.val() : {};
+            const counts = {};
+            const matchKeys = new Set([...Object.keys(awardsByMatch), ...Object.keys(summariesByMatch)]);
+
+            matchKeys.forEach(matchKey => {
+                if (year && !String(matchKey).startsWith(`${year}-`)) return;
+                const record = { ...(summariesByMatch[matchKey] || {}), ...(awardsByMatch[matchKey] || {}) };
+                let value = record[field];
+                if (field === 'manOfMatch' && !value && record.playerStats) {
+                    const bestPlayer = Object.values(record.playerStats)
+                        .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))[0];
+                    value = bestPlayer?.name || '';
+                }
+                const winners = [...new Set(Array.isArray(value) ? value : (value ? [value] : []))];
+                winners.forEach(name => {
+                    if (name) counts[name] = (counts[name] || 0) + 1;
+                });
+            });
+
+            const ranking = Object.entries(counts).sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]));
+            document.getElementById('myAwardsModalTitle').innerText = `${label} RANKING`;
+            document.getElementById('myAwardsPeriod').innerText = `${year || 'ALL'} SEASON - ${ranking.length} PLAYERS`;
+            document.getElementById('myAwardsRankingHeader').classList.remove('hidden');
+            document.getElementById('myAwardsList').innerHTML = ranking.length > 0
+                ? ranking.map(([name, wins], index) => `<div class="flex items-center justify-between gap-3 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-black text-green-300"><span>#${index + 1} ${name}</span><span class="rounded-full bg-green-400/20 px-3 py-1 text-white">${wins} WIN${wins === 1 ? '' : 'S'}</span></div>`).join('')
+                : '<p class="text-center text-sm text-gray-400">No winners recorded for this category.</p>';
+            document.getElementById('myAwardsList').scrollTop = 0;
+            document.getElementById('myAwardsModal').style.display = 'flex';
+        }).catch(error => {
+            console.error('Error loading award ranking:', error);
+            alert('Unable to load this award ranking right now.');
+        });
+    }
+
+    function showMyAwards() {
+        const playerName = currentUserProfileUsername || auth.currentUser?.displayName;
+        if (!playerName || playerName === 'Anonymous') return alert('Your player profile is not available yet.');
+
+        Promise.all([
+            firebase.database().ref('golaha_match_awards').once('value'),
+            firebase.database().ref('golaha_match_summary').once('value')
+        ]).then(([awardsSnapshot, summarySnapshot]) => {
+            const awardsByMatch = awardsSnapshot.exists() ? awardsSnapshot.val() : {};
+            const summariesByMatch = summarySnapshot.exists() ? summarySnapshot.val() : {};
+            const counts = {
+                'MVP Wins': 0,
+                'Top Scorer': 0,
+                'Top Assister': 0,
+                'Best Goal': 0,
+                'Best Midfielder': 0,
+                'Best Defender': 0,
+                'Best Assist': 0,
+                'Best Goalkeeper': 0
+            };
+            const fields = [
+                ['MVP Wins', 'manOfMatch'],
+                ['Top Scorer', 'topScorers'],
+                ['Top Assister', 'topAssisters'],
+                ['Best Goal', 'bestGoal'],
+                ['Best Midfielder', 'bestMidfield'],
+                ['Best Defender', 'bestDefender'],
+                ['Best Assist', 'bestAssist'],
+                ['Best Goalkeeper', 'bestGoalkeeper']
+            ];
+            const awardIcons = {
+                'MVP Wins': '🏆',
+                'Top Scorer': '⚽',
+                'Top Assister': '🤝',
+                'Best Goal': '🎯',
+                'Best Midfielder': '🧠',
+                'Best Defender': '🛡️',
+                'Best Assist': '✨',
+                'Best Goalkeeper': '🧤'
+            };
+
+            const matchKeys = new Set([...Object.keys(awardsByMatch), ...Object.keys(summariesByMatch)]);
+            matchKeys.forEach(matchKey => {
+                const awards = { ...(summariesByMatch[matchKey] || {}), ...(awardsByMatch[matchKey] || {}) };
+                fields.forEach(([label, field]) => {
+                    let value = awards[field];
+                    if (field === 'manOfMatch' && !value && awards.playerStats) {
+                        const bestPlayer = Object.values(awards.playerStats)
+                            .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))[0];
+                        value = bestPlayer?.name || '';
+                    }
+                    if (Array.isArray(value) ? value.includes(playerName) : value === playerName) counts[label]++;
+                });
+            });
+
+            const totalAwards = Object.values(counts).reduce((sum, count) => sum + count, 0);
+            document.getElementById('myAwardsRankingHeader').classList.add('hidden');
+            document.getElementById('myAwardsPeriod').innerText = `ALL MATCHES - ${totalAwards} AWARD${totalAwards === 1 ? '' : 'S'}`;
+            document.getElementById('myAwardsList').innerHTML = totalAwards > 0
+                ? fields.filter(([label]) => counts[label] > 0).map(([label]) => `<div class="flex items-center justify-between gap-3 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-black text-green-300"><span class="flex items-center gap-2"><span>${awardIcons[label]}</span><span>${label}</span></span><span class="rounded-full bg-green-400/20 px-3 py-1 text-white">${counts[label]}</span></div>`).join('')
+                : '<p class="text-center text-sm text-gray-400">No awards recorded yet.</p>';
+            document.getElementById('myAwardsList').scrollTop = 0;
+            document.getElementById('myAwardsModal').style.display = 'flex';
+        }).catch(error => {
+            console.error('Error loading player awards:', error);
+            alert('Unable to load your awards right now.');
+        });
+    }
+
+    function closeMyAwards(event) {
+        if (!event || event.target.id === 'myAwardsModal' || event.target.tagName?.toLowerCase() === 'button') {
+            document.getElementById('myAwardsModal').style.display = 'none';
+        }
     }
 
     function closeReport(event) {
@@ -3397,11 +4193,10 @@
         });
 
         if(t === 'pay' || t === 'gan' || t === 'fasax') {
-            const pSel = document.getElementById('payPlayerSelect');
             const gSel = document.getElementById('ganPlayerSelect');
             const fSel = document.getElementById('fasaxPlayerSelect');
             const mainSelHTML = document.getElementById('pNameSelect').innerHTML;
-            if(pSel) pSel.innerHTML = mainSelHTML;
+            updatePaymentPlayerDropdown();
             if(gSel) gSel.innerHTML = mainSelHTML;
             if(fSel) fSel.innerHTML = mainSelHTML;
         }
@@ -3442,9 +4237,9 @@
         document.getElementById('largeViewSubtitle').innerText = `${MONTHS[mo]} ${yr} Ledger`;
         const monthKey = `${yr}-${mo}`,
               records = paymentData[monthKey] || {},
-              allPlayers = Object.keys(profiles).sort();
+              allPlayers = getMonthlyPaymentPlayerNames();
 
-        let tableRows = allPlayers.filter(name => name !== "FULL CASHIER").map(name => {
+        let tableRows = allPlayers.map(name => {
             const hasPaid = records[name] === true;
             return `
                 <tr class="hover:bg-white/5 transition">
@@ -3576,9 +4371,7 @@
         for(let key in votes) {
             if (key === "FULL CASHIER") continue; 
             
-            const fData = fasaxData[key];
-            const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
-            if (isFasax) continue;
+            if (isPlayerOnLeave(key)) continue;
             
             const voteData = typeof votes[key] === 'object' ? (votes[key].status ? votes[key] : { status: votes[key], timestamp: null }) : { status: votes[key], timestamp: null };
             const voteStatus = voteData.status;
@@ -3653,10 +4446,7 @@
     function castVote(status) {
         if(!currentUserProfileUsername || currentUserProfileUsername === "Anonymous") return alert("Please authenticating session.");
         
-        const fData = fasaxData[currentUserProfileUsername];
-        const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
-        
-        if (isFasax) {
+        if (isPlayerOnLeave(currentUserProfileUsername)) {
             alert("Maku codeyn kartid sababtoo ah waxaad ku jirtaa Fasax!");
             return;
         }
@@ -3677,7 +4467,9 @@
             }
         }
 
-        let currentJooge = Object.values(votes).filter(v => (typeof v==='object'?v.status:v)==='JOOGE').length;
+        let currentJooge = Object.entries(votes).filter(([name, vote]) =>
+            !isPlayerOnLeave(name) && (typeof vote === 'object' ? vote.status : vote) === 'JOOGE'
+        ).length;
         if(status==='JOOGE' && currentJooge >= 15){
             alert('Jooge votes have reached the limit of 14.');
             return;
@@ -3714,9 +4506,7 @@ function showVoterList(type) {
             Object.keys(profiles).forEach(name => {
                 if (name === "FULL CASHIER") return; 
                 
-                const fData = fasaxData[name];
-                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
-                if (isFasax) return;
+                if (isPlayerOnLeave(name)) return;
                 
                 if (!votes[name]) {
                     const profile = profiles[name], photo = typeof profile === 'string' ? profile : profile?.photo;
@@ -3731,9 +4521,7 @@ function showVoterList(type) {
             for(let name in votes) {
                 if (name === "FULL CASHIER") continue; 
                 
-                const fData = fasaxData[name];
-                const isFasax = fData && (typeof fData === 'object' ? fData.status === 'fasax' : fData === 'fasax');
-                if (isFasax) continue;
+                if (isPlayerOnLeave(name)) continue;
                 
                 const voteData = typeof votes[name] === 'object' ? votes[name] : { status: votes[name], timestamp: null };
                 
